@@ -204,7 +204,7 @@ function serializeRecord_(record) {
 
 function setPreparationDecision(id, status) {
   return locked_(function () {
-    const allowed = ['A_DECIDER', 'A_VERIFIER', 'A_ACHETER', 'IGNORE'];
+    const allowed = ['A_DECIDER', 'A_VERIFIER', 'A_ACHETER', 'A_VERIFIER_STOCK', 'IGNORE'];
     if (allowed.indexOf(status) < 0) throw new Error('Décision invalide.');
     const record = findById_('courses', id);
     if (!record) return { ok: false, missing: true, id: id };
@@ -219,7 +219,7 @@ function setPreparationDecision(id, status) {
 function setPreparationDecisions(items) {
   return locked_(function () {
     ensureSetup_();
-    const allowed = ['A_DECIDER', 'A_VERIFIER', 'A_ACHETER', 'IGNORE'];
+    const allowed = ['A_DECIDER', 'A_VERIFIER', 'A_ACHETER', 'A_VERIFIER_STOCK', 'IGNORE'];
     const now = new Date();
     const results = [];
     let changed = false;
@@ -232,7 +232,7 @@ function setPreparationDecisions(items) {
         return;
       }
       record.STATUT = status;
-      if (status === 'A_ACHETER' && item.note !== undefined) record.COMMENTAIRE = clean_(item.note);
+      if ((status === 'A_ACHETER' || status === 'A_VERIFIER_STOCK') && item.note !== undefined) record.COMMENTAIRE = clean_(item.note);
       record.MAJ = now;
       upsert_('courses', record);
       results.push(record);
@@ -491,7 +491,7 @@ function createPreparationItem(catalogueId) {
     if (!catalogue) throw new Error('Produit de référence introuvable.');
     const existing = rows_('courses').filter(function (x) {
       return String(x.CATALOGUE_ID) === String(catalogueId) &&
-        ['A_DECIDER', 'A_VERIFIER', 'A_ACHETER', 'IGNORE'].indexOf(x.STATUT) >= 0;
+        ['A_DECIDER', 'A_VERIFIER', 'A_ACHETER', 'A_VERIFIER_STOCK', 'IGNORE'].indexOf(x.STATUT) >= 0;
     })[0];
     if (existing) return serializeRecord_(existing);
     const now = new Date();
@@ -526,7 +526,7 @@ function deleteCatalogue(id) {
     record.MAJ = new Date();
     upsert_('catalogue', record);
     rows_('courses').forEach(function (x) {
-      if (String(x.CATALOGUE_ID) === String(id) && ['A_DECIDER', 'A_VERIFIER', 'A_ACHETER', 'IGNORE'].indexOf(x.STATUT) >= 0) {
+      if (String(x.CATALOGUE_ID) === String(id) && ['A_DECIDER', 'A_VERIFIER', 'A_ACHETER', 'A_VERIFIER_STOCK', 'IGNORE'].indexOf(x.STATUT) >= 0) {
         deleteById_('courses', x.ID);
       }
     });
@@ -1264,7 +1264,7 @@ function findById_(key, id) {
 function syncOpenCoursesFromCatalogue_(catalogue) {
   rows_('courses').forEach(function (x) {
     if (String(x.CATALOGUE_ID) !== String(catalogue.ID)) return;
-    if (['A_DECIDER', 'A_VERIFIER', 'A_ACHETER', 'IGNORE'].indexOf(x.STATUT) < 0) return;
+    if (['A_DECIDER', 'A_VERIFIER', 'A_ACHETER', 'A_VERIFIER_STOCK', 'IGNORE'].indexOf(x.STATUT) < 0) return;
     x.PRODUIT = catalogue.PRODUIT;
     x.TYPOLOGIE = catalogue.TYPOLOGIE;
     x.MAGASIN_DEFAUT = catalogue.MAGASIN_DEFAUT;
