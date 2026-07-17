@@ -128,6 +128,17 @@ function getBootstrapHome() {
   };
 }
 
+function getBootstrapHomeIfChanged(clientRevision) {
+  ensureSetup_();
+  const revision = getRevision_();
+  if (String(clientRevision || '') === String(revision || '')) {
+    return { unchanged: true, revision: revision };
+  }
+  const data = getBootstrapHome();
+  data.unchanged = false;
+  return data;
+}
+
 function getShoppingData() {
   ensureSetup_();
   const allCourses = rows_('courses');
