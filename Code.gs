@@ -164,6 +164,14 @@ function getCatalogData() {
   };
 }
 
+function getSeasonData() {
+  ensureSetup_();
+  return {
+    revision: getRevision_(),
+    legumesSaison: rows_('legumesSaison')
+  };
+}
+
 function startNewPreparation() {
   return locked_(function () {
     ensureSetup_();
