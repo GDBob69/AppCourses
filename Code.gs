@@ -484,6 +484,39 @@ function saveCatalogue(item) {
   });
 }
 
+function createPreparationItem(catalogueId) {
+  return locked_(function () {
+    ensureSetup_();
+    const catalogue = findById_('catalogue', catalogueId);
+    if (!catalogue) throw new Error('Produit de référence introuvable.');
+    const existing = rows_('courses').filter(function (x) {
+      return String(x.CATALOGUE_ID) === String(catalogueId) &&
+        ['A_DECIDER', 'A_VERIFIER', 'A_ACHETER', 'IGNORE'].indexOf(x.STATUT) >= 0;
+    })[0];
+    if (existing) return serializeRecord_(existing);
+    const now = new Date();
+    const record = {
+      ID: Utilities.getUuid(),
+      CATALOGUE_ID: catalogue.ID,
+      PRODUIT: catalogue.PRODUIT,
+      TYPOLOGIE: catalogue.TYPOLOGIE,
+      MAGASIN_DEFAUT: catalogue.MAGASIN_DEFAUT,
+      MAGASIN_ACTUEL: catalogue.MAGASIN_DEFAUT,
+      RAYON: catalogue.RAYON,
+      QUANTITE: catalogue.QUANTITE_DEFAUT || '1',
+      CONDITIONNEMENT: catalogue.CONDITIONNEMENT,
+      COMMENTAIRE: '',
+      STATUT: 'A_DECIDER',
+      AJOUTE_LE: now,
+      ACHETE_LE: '',
+      MAJ: now
+    };
+    upsert_('courses', record);
+    bumpRevision_();
+    return serializeRecord_(record);
+  });
+}
+
 function deleteCatalogue(id) {
   return locked_(function () {
     ensureSetup_();
