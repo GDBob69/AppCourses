@@ -213,6 +213,7 @@ function buy(id,el){
  S.data.courses=S.data.courses.filter(c=>String(c.ID)!==String(id));
  if(S.pendingCourseSaves&&S.pendingCourseSaves[id])delete S.pendingCourseSaves[id];
  S.pendingBoughtCourses=S.pendingBoughtCourses||{};S.pendingBoughtCourses[id]=item;
+ rememberBoughtHidden(item);
  S.recentBought=(S.recentBought||[]).filter(x=>String(x.ID)!==String(id));S.recentBought.push(item);if(S.recentBought.length>5)S.recentBought=S.recentBought.slice(-5);
  markLocalChange();const card=el?.closest?.('.card');if(card)card.remove();scheduleCoursesRender();toast('Article ajouté au panier');writeClientCache();scheduleBoughtFlush();
 }
@@ -220,6 +221,7 @@ function undoBuy(id){
  const item=(S.recentBought||[]).find(x=>String(x.ID)===String(id))||(S.pendingBoughtCourses||{})[id];if(!item)return;
  S.recentBought=(S.recentBought||[]).filter(x=>String(x.ID)!==String(id));
  if(S.pendingBoughtCourses&&S.pendingBoughtCourses[id])delete S.pendingBoughtCourses[id];
+ forgetBoughtHidden(item);
  if(!S.data.courses.some(c=>String(c.ID)===String(id)))S.data.courses.push(item);
  markLocalChange();scheduleCoursesRender(80);toast('Article remis dans la liste');writeClientCache();
  if(!String(id).startsWith('local-'))backgroundSync(()=>server('reopenCourse',id),()=>{S.data.courses=S.data.courses.filter(c=>String(c.ID)!==String(id));S.recentBought.push(item)})
@@ -229,9 +231,17 @@ function flushBoughtCourses(){
  if(S.boughtFlushInFlight)return;
  const entries=Object.entries(S.pendingBoughtCourses||{});
  const ids=entries.map(([id,item])=>String((item&&item.ID)||id)).filter(id=>!isLocalCourseId(id));
- if(!ids.length){cleanupStalePendingActions(true);writeClientCache();updateSyncStatus();return}
+ if(!ids.length){
+  const waiters=entries.filter(([,item])=>item&&item.CATALOGUE_ID&&S.pendingAdds&&S.pendingAdds[item.CATALOGUE_ID]);
+  if(waiters.length){
+   S.boughtFlushInFlight=true;writeClientCache();updateSyncStatus();
+   backgroundSync(()=>Promise.all(waiters.map(([localId,item])=>S.pendingAdds[item.CATALOGUE_ID]().then(saved=>server('completeCourse',saved.ID).then(()=>{rememberBoughtHidden(saved);delete S.pendingBoughtCourses[localId];writeClientCache();return saved})))),()=>{}).finally(()=>{S.boughtFlushInFlight=false;if(Object.keys(S.pendingBoughtCourses||{}).length)scheduleBoughtFlush(900);else updateSyncStatus()});
+   return;
+  }
+  cleanupStalePendingActions(true);writeClientCache();updateSyncStatus();return
+ }
  S.boughtFlushInFlight=true;writeClientCache();
- backgroundSync(()=>server('completeCourses',ids).then(res=>{entries.forEach(([key,item])=>{if(ids.includes(String((item&&item.ID)||key)))delete S.pendingBoughtCourses[key]});writeClientCache();return res}),()=>{entries.forEach(([,item])=>{if(!S.data.courses.some(c=>String(c.ID)===String(item.ID)))S.data.courses.push(item)})}).finally(()=>{S.boughtFlushInFlight=false;if(Object.keys(S.pendingBoughtCourses||{}).length)scheduleBoughtFlush()})
+ backgroundSync(()=>server('completeCourses',ids).then(res=>{const okIds=new Set(((res&&res.results)||[]).filter(x=>x&&x.ok).map(x=>String(x.id)));entries.forEach(([key,item])=>{const doneId=String((item&&item.ID)||key);if(okIds.has(doneId)){rememberBoughtHidden(item);delete S.pendingBoughtCourses[key]}});writeClientCache();return res}),()=>{entries.forEach(([,item])=>{if(!S.data.courses.some(c=>String(c.ID)===String(item.ID)))S.data.courses.push(item)})}).finally(()=>{S.boughtFlushInFlight=false;if(Object.keys(S.pendingBoughtCourses||{}).length)scheduleBoughtFlush()})
 }
 function flushAllPendingNow(){
  cleanupStalePendingActions(true);
@@ -311,7 +321,7 @@ function backgroundSync(work,rollback){
  S.syncChain=job.catch(()=>{});
  return job;
 }
-function cleanupStalePendingActions(persist=false){let cleaned=0;const del=(bag,id)=>{if(bag&&Object.prototype.hasOwnProperty.call(bag,id)){delete bag[id];cleaned++}};Object.entries(S.pendingPrepDecisions||{}).forEach(([id,v])=>{if(!String(id).startsWith('local-')||S.preparationSyncing)return;const cid=typeof v==='string'?'':v.catalogueId||'';const row=cid&&[...(S.data?.preparation||[]),...(S.data?.courses||[])].find(x=>String(x.CATALOGUE_ID)===String(cid)&&!String(x.ID||'').startsWith('local-'));if(!row)del(S.pendingPrepDecisions,id)});Object.keys(S.pendingStoreMoves||{}).forEach(id=>{if(String(id).startsWith('local-')&&!(S.pendingCourseSaves||{})[id])del(S.pendingStoreMoves,id)});Object.keys(S.pendingBoughtCourses||{}).forEach(id=>{if(isLocalCourseId(id)&&!(S.pendingCourseSaves||{})[id])del(S.pendingBoughtCourses,id)});Object.entries(S.pendingCourseSaves||{}).forEach(([id,entry])=>{if(!entry||!entry.payload)del(S.pendingCourseSaves,id)});Object.keys(S.pendingMenuStates||{}).forEach(id=>{if(!String(id).startsWith('local-'))return;const stillPending=Object.values(S.pendingMenuKeys||{}).some(x=>String(x)===String(id));if(!stillPending)del(S.pendingMenuStates,id)});Object.keys(S.pendingLeftoverDeletes||{}).forEach(id=>{if(String(id).startsWith('local-'))del(S.pendingLeftoverDeletes,id)});if(cleaned){S.lastPendingCleanup=cleaned;if(persist)writeClientCache()}return cleaned}
+function cleanupStalePendingActions(persist=false){let cleaned=0;const del=(bag,id)=>{if(bag&&Object.prototype.hasOwnProperty.call(bag,id)){delete bag[id];cleaned++}};Object.entries(S.pendingPrepDecisions||{}).forEach(([id,v])=>{if(!String(id).startsWith('local-')||S.preparationSyncing)return;const cid=typeof v==='string'?'':v.catalogueId||'';const row=cid&&[...(S.data?.preparation||[]),...(S.data?.courses||[])].find(x=>String(x.CATALOGUE_ID)===String(cid)&&!String(x.ID||'').startsWith('local-'));if(!row)del(S.pendingPrepDecisions,id)});Object.keys(S.pendingStoreMoves||{}).forEach(id=>{if(String(id).startsWith('local-')&&!(S.pendingCourseSaves||{})[id])del(S.pendingStoreMoves,id)});Object.entries(S.pendingBoughtCourses||{}).forEach(([id,item])=>{const waitingAdd=item&&item.CATALOGUE_ID&&S.pendingAdds&&S.pendingAdds[item.CATALOGUE_ID];if(isLocalCourseId(id)&&!(S.pendingCourseSaves||{})[id]&&!waitingAdd)del(S.pendingBoughtCourses,id)});Object.entries(S.pendingCourseSaves||{}).forEach(([id,entry])=>{if(!entry||!entry.payload)del(S.pendingCourseSaves,id)});Object.keys(S.pendingMenuStates||{}).forEach(id=>{if(!String(id).startsWith('local-'))return;const stillPending=Object.values(S.pendingMenuKeys||{}).some(x=>String(x)===String(id));if(!stillPending)del(S.pendingMenuStates,id)});Object.keys(S.pendingLeftoverDeletes||{}).forEach(id=>{if(String(id).startsWith('local-'))del(S.pendingLeftoverDeletes,id)});if(cleaned){S.lastPendingCleanup=cleaned;if(persist)writeClientCache()}return cleaned}
 function pendingLocalCount(){cleanupStalePendingActions(false);return Object.keys(S.pendingPrepDecisions||{}).length+Object.keys(S.pendingStoreMoves||{}).length+Object.keys(S.pendingBoughtCourses||{}).length+Object.keys(S.pendingCourseSaves||{}).length+Object.keys(S.pendingMenuStates||{}).length+Object.keys(S.pendingLeftoverDeletes||{}).length}
 function pendingSyncBreakdown(){return [
  ['Référentiel / préparation',Object.keys(S.pendingPrepDecisions||{}).length],
@@ -460,7 +470,11 @@ function reconcileSavedCourse(localId,saved,token){
  return saved;
 }
 function applyPendingCourseSavesLocally(){const data=ensureData();Object.entries(S.pendingCourseSaves||{}).forEach(([id,entry])=>{if(!entry||!entry.item)return;let item=(data.courses||[]).find(c=>String(c.ID)===String(id));if(item)Object.assign(item,entry.item);else data.courses.push(structuredClone(entry.item))})}
-function applyPendingBoughtCoursesLocally(){const data=ensureData();const boughtIds=new Set(Object.keys(S.pendingBoughtCourses||{}).map(String));if(!boughtIds.size)return;data.courses=(data.courses||[]).filter(c=>!boughtIds.has(String(c.ID)))}
+function rememberBoughtHidden(item){if(!item)return;S.hiddenBoughtCourses=S.hiddenBoughtCourses||{};const until=Date.now()+120000;[item.ID&&'id:'+item.ID,item.CATALOGUE_ID&&'cat:'+item.CATALOGUE_ID,item.PRODUIT&&'name:'+searchKey(item.PRODUIT)].filter(Boolean).forEach(k=>S.hiddenBoughtCourses[k]=until)}
+function forgetBoughtHidden(item){if(!item||!S.hiddenBoughtCourses)return;[item.ID&&'id:'+item.ID,item.CATALOGUE_ID&&'cat:'+item.CATALOGUE_ID,item.PRODUIT&&'name:'+searchKey(item.PRODUIT)].filter(Boolean).forEach(k=>delete S.hiddenBoughtCourses[k])}
+function pruneHiddenBoughtCourses(){const now=Date.now();Object.entries(S.hiddenBoughtCourses||{}).forEach(([k,until])=>{if(Number(until)<now)delete S.hiddenBoughtCourses[k]})}
+function isHiddenBoughtCourse(item){if(!item)return false;pruneHiddenBoughtCourses();const h=S.hiddenBoughtCourses||{};return !!(h['id:'+item.ID]||h['cat:'+item.CATALOGUE_ID]||h['name:'+searchKey(item.PRODUIT)])}
+function applyPendingBoughtCoursesLocally(){const data=ensureData();const boughtIds=new Set(Object.keys(S.pendingBoughtCourses||{}).map(String));data.courses=(data.courses||[]).filter(c=>!boughtIds.has(String(c.ID))&&!isHiddenBoughtCourse(c))}
 function saveCatalogOptimistic(v){
  const previous=structuredClone({catalogue:S.data.catalogue,courses:S.data.courses,preparation:S.data.preparation});
  let item=S.data.catalogue.find(c=>c.ID===v.id);
@@ -572,6 +586,7 @@ function renderHistoryByDate(xs){const meals={MIDI:0,SOIR:1};const sorted=[...xs
 function renderUndoStrip(){const items=(S.recentBought||[]).slice(-3).reverse();if(!items.length)return'';return `<div class="undo-strip">${items.map(x=>`<div class="undo-row"><div><b>${esc(x.PRODUIT)}</b><div class="sub">Coché récemment</div></div><button class="secondary" onclick="undoBuy('${x.ID}')">Annuler</button></div>`).join('')}</div>`}
 function renderCourses(){
  const data=ensureData();
+ applyPendingBoughtCoursesLocally();
  if(!S.shoppingLoaded&&S.shoppingLoading&&!data.courses.length){$('#courseStats').innerHTML='';$('#courseList').innerHTML=empty('⏳','Chargement des courses','La liste active arrive…');return}
  const q=$('#courseSearch').value.toLowerCase();let list=data.courses.filter(x=>(x.PRODUIT+' '+x.RAYON+' '+x.TYPOLOGIE+' '+x.MAGASIN_ACTUEL).toLowerCase().includes(q));
  const key=S.group==='store'?'MAGASIN_ACTUEL':'RAYON';
@@ -644,8 +659,8 @@ function debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>f
 function homeDataSnapshot(){const d=ensureData();return {revision:d.revision,today:d.today,settings:d.settings||{weekStart:6},menus:d.menus||[],restes:d.restes||[]}}
 function readHomeCache(){try{const raw=localStorage.getItem('coursesMenusHomeCacheV1');if(!raw)return null;const parsed=JSON.parse(raw);if(parsed&&parsed.__homeCache){S.pendingMenuStates=parsed.pendingMenuStates||{};S.pendingLeftoverDeletes=parsed.pendingLeftoverDeletes||{};return parsed.data||null}return parsed}catch(e){return null}}
 function writeHomeCache(){clearTimeout(S.homeCacheWriteTimer);S.homeCacheWriteTimer=setTimeout(()=>{try{localStorage.setItem('coursesMenusHomeCacheV1',JSON.stringify({__homeCache:1,data:homeDataSnapshot(),pendingMenuStates:S.pendingMenuStates||{},pendingLeftoverDeletes:S.pendingLeftoverDeletes||{}}))}catch(e){}},20)}
-function readClientCache(){try{const raw=localStorage.getItem('coursesMenusCacheV1');if(!raw)return null;const parsed=JSON.parse(raw);if(parsed&&parsed.__appCache){S.pendingPrepDecisions=parsed.pendingPrepDecisions||{};S.pendingStoreMoves=parsed.pendingStoreMoves||{};S.pendingBoughtCourses=parsed.pendingBoughtCourses||{};S.pendingCourseSaves=parsed.pendingCourseSaves||{};S.pendingMenuStates=Object.assign({},S.pendingMenuStates||{},parsed.pendingMenuStates||{});S.pendingLeftoverDeletes=Object.assign({},S.pendingLeftoverDeletes||{},parsed.pendingLeftoverDeletes||{});return parsed.data||null}return parsed}catch(e){return null}}
-function writeClientCache(){writeHomeCache();clearTimeout(S.cacheWriteTimer);S.cacheWriteTimer=setTimeout(()=>{try{localStorage.setItem('coursesMenusCacheV1',JSON.stringify({__appCache:4,data:ensureData(),pendingPrepDecisions:S.pendingPrepDecisions||{},pendingStoreMoves:S.pendingStoreMoves||{},pendingBoughtCourses:S.pendingBoughtCourses||{},pendingCourseSaves:S.pendingCourseSaves||{},pendingMenuStates:S.pendingMenuStates||{},pendingLeftoverDeletes:S.pendingLeftoverDeletes||{}}))}catch(e){}},45)}
+function readClientCache(){try{const raw=localStorage.getItem('coursesMenusCacheV1');if(!raw)return null;const parsed=JSON.parse(raw);if(parsed&&parsed.__appCache){S.pendingPrepDecisions=parsed.pendingPrepDecisions||{};S.pendingStoreMoves=parsed.pendingStoreMoves||{};S.pendingBoughtCourses=parsed.pendingBoughtCourses||{};S.pendingCourseSaves=parsed.pendingCourseSaves||{};S.pendingMenuStates=Object.assign({},S.pendingMenuStates||{},parsed.pendingMenuStates||{});S.pendingLeftoverDeletes=Object.assign({},S.pendingLeftoverDeletes||{},parsed.pendingLeftoverDeletes||{});S.hiddenBoughtCourses=parsed.hiddenBoughtCourses||{};return parsed.data||null}return parsed}catch(e){return null}}
+function writeClientCache(){writeHomeCache();clearTimeout(S.cacheWriteTimer);S.cacheWriteTimer=setTimeout(()=>{try{localStorage.setItem('coursesMenusCacheV1',JSON.stringify({__appCache:5,data:ensureData(),pendingPrepDecisions:S.pendingPrepDecisions||{},pendingStoreMoves:S.pendingStoreMoves||{},pendingBoughtCourses:S.pendingBoughtCourses||{},pendingCourseSaves:S.pendingCourseSaves||{},pendingMenuStates:S.pendingMenuStates||{},pendingLeftoverDeletes:S.pendingLeftoverDeletes||{},hiddenBoughtCourses:S.hiddenBoughtCourses||{}}))}catch(e){}},45)}
 function runWhenIdle(fn,timeout=1500){if('requestIdleCallback'in window)requestIdleCallback(fn,{timeout});else setTimeout(fn,timeout)}
 function warmFullCacheFromLocal(){if(S.fullCacheWarmed)return;S.fullCacheWarmed=true;runWhenIdle(()=>{try{const cached=readClientCache();if(!cached)return;const beforeTab=S.tab;S.data=mergeLightData(S.data,normalizeData(cached));applyPendingPrepDecisionsLocally();applyPendingCourseSavesLocally();applyPendingBoughtCoursesLocally();applyPendingMenuStatesLocally();applyPendingLeftoverDeletesLocally();S.catalogLoaded=!!S.data.catalogue.length;S.shoppingLoaded=!!(S.data.courses.length||S.data.preparation.length);if(beforeTab==='courses')renderCourses();else if(beforeTab==='catalogue')renderCatalog();else if(beforeTab==='restes')renderLeftovers()}catch(e){console.warn('Cache complet ignoré au démarrage',e)}},1800)}
 function renderDataViews(...views){queueRender(()=>{if(views.includes(S.tab))renderActive()})}
