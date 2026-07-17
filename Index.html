@@ -1,0 +1,772 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="theme-color" content="#184e47">
+  <style>
+    :root{--green:#184e47;--mint:#dff3ec;--cream:#fbfaf5;--ink:#17312d;--muted:#6a7d79;--line:#dce5e1;--orange:#e87d48;--red:#c84630;--shadow:0 8px 24px rgba(20,58,51,.10)}
+    *{box-sizing:border-box} body{margin:0;background:var(--cream);color:var(--ink);font:15px/1.4 system-ui,-apple-system,Segoe UI,sans-serif}
+    button,input,select,textarea{font:inherit} button{cursor:pointer} .app{max-width:980px;margin:auto;min-height:100vh;padding-bottom:84px}
+    header{position:sticky;top:0;z-index:10;background:rgba(251,250,245,.96);backdrop-filter:blur(10px);padding:18px 18px 10px;border-bottom:1px solid var(--line)}
+    .head{display:flex;align-items:center;justify-content:space-between;gap:12px}.head-actions{display:flex;align-items:center;gap:8px}.help-btn{border:0;border-radius:999px;width:32px;height:32px;background:white;color:var(--green);font-weight:900;box-shadow:0 1px 0 var(--line)}.save-now{border:0;border-radius:999px;padding:7px 10px;background:var(--mint);color:var(--green);font-size:12px;font-weight:900;white-space:nowrap}.brand{font-size:22px;font-weight:800}.brand span{color:var(--orange)}
+    .sync{font-size:12px;font-weight:850;color:var(--muted);padding:5px 10px;border-radius:999px;background:rgba(223,243,236,.55);white-space:nowrap}.sync.pending{color:#8a5700;background:#fff0cf;box-shadow:0 0 0 1px rgba(138,87,0,.12) inset}.sync.error{color:var(--red);background:#fde7e2;box-shadow:0 0 0 1px rgba(200,70,48,.14) inset}.sync.ok{color:#17623a;background:#d9f2e3;box-shadow:0 0 0 1px rgba(23,98,58,.12) inset} .toolbar{display:flex;gap:8px;margin-top:12px;overflow:auto;padding-bottom:2px}
+    .chip,.icon-btn,.primary,.secondary,.danger{border:0;border-radius:12px;padding:10px 13px;background:white;color:var(--ink);box-shadow:0 1px 0 var(--line)}
+    .chip.active,.primary{background:var(--green);color:white}.primary{font-weight:700}.danger{color:var(--red)}.secondary{background:var(--mint);box-shadow:none}
+    main{padding:18px}.panel{display:none}.panel.active{display:block}.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:5px 0 14px}
+    h1,h2,h3,p{margin-top:0}h1{font-size:24px;margin-bottom:3px}h2{font-size:18px;margin-bottom:8px}.sub{color:var(--muted);font-size:13px}
+    .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.stat{background:white;border:1px solid var(--line);border-radius:14px;padding:11px}.stat b{display:block;font-size:20px}
+    .search{width:100%;border:1px solid var(--line);background:white;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+    .group{margin:18px 0}.group-title{position:sticky;top:116px;z-index:3;background:var(--cream);display:flex;justify-content:space-between;align-items:center;padding:7px 2px;font-weight:800}
+    .card{background:white;border:1px solid var(--line);border-radius:16px;padding:12px;margin:8px 0;box-shadow:0 2px 10px rgba(20,58,51,.035);transition:opacity .12s,transform .12s}
+    .card.pending{opacity:.52;transform:scale(.995);pointer-events:none}
+    .item{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center}.check{width:34px;height:34px;border:2px solid #a9bbb6;border-radius:50%;background:white}.check:active{background:var(--mint)}
+    .item-name{font-weight:750}.meta{color:var(--muted);font-size:12px;margin-top:3px}.store{border:0;background:var(--mint);color:var(--green);border-radius:9px;padding:7px;max-width:130px}
+    .empty{text-align:center;padding:42px 18px;color:var(--muted)}.empty .emoji{font-size:40px}
+    .fab{position:fixed;right:max(18px,calc((100vw - 980px)/2 + 18px));bottom:82px;width:56px;height:56px;border:0;border-radius:50%;background:var(--orange);color:white;font-size:28px;box-shadow:var(--shadow);z-index:12}
+    nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--line);display:flex;justify-content:center;z-index:15;padding-bottom:env(safe-area-inset-bottom)}
+    nav button{width:min(12.5%,128px);border:0;background:white;padding:10px 4px 8px;color:var(--muted);font-size:12px}nav button.active{color:var(--green);font-weight:800}nav b{display:block;font-size:20px}
+    dialog{border:0;border-radius:22px;padding:0;width:min(560px,calc(100% - 24px));max-height:88vh;box-shadow:0 24px 80px rgba(0,0,0,.28)}dialog::backdrop{background:rgba(10,30,27,.48)}
+    .modal{padding:20px;overflow:auto;max-height:88vh}.modal-head{display:flex;justify-content:space-between;align-items:center}.close{border:0;background:none;font-size:25px}
+    .form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form .full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
+    input,select,textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:11px;padding:11px;background:white;color:var(--ink)}textarea{min-height:76px;max-height:220px;resize:vertical;overflow-y:scroll;scrollbar-gutter:stable}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+    .days{display:flex;gap:8px;overflow:auto;margin-bottom:14px}.day{min-width:76px;padding:10px;border:1px solid var(--line);border-radius:14px;background:white;text-align:center}.day.active{background:var(--green);color:white}.day b{display:block}
+    .meal{border-left:4px solid var(--green)}.meal.soir{border-left-color:var(--orange)}.meal-top{display:flex;justify-content:space-between;align-items:center}.menu-state{width:22px;height:22px;border-radius:999px;border:2px solid white;box-shadow:0 1px 5px rgba(0,0,0,.18);padding:0;flex:0 0 auto}.menu-state.todo{background:#d94b3d}.menu-state.doing{background:#f4c542}.menu-state.ok{background:#36a269}.week-table{display:grid;grid-template-columns:minmax(88px,.55fr) minmax(0,1.25fr) minmax(0,1.25fr);gap:8px;align-items:stretch}.week-head{font-size:12px;font-weight:850;color:var(--muted);padding:0 6px 2px}.week-date{background:rgba(255,255,255,.5);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;justify-content:center;font-weight:850}.week-date .sub{margin-top:2px}.week-meal{min-height:76px;padding:10px;margin:0}.week-meal h2{font-size:15px;margin:2px 0;line-height:1.2}.week-meal .chipline{margin-top:5px}.week-meal .meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.week-compact-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+    .planned-leftovers{margin-top:10px;padding:9px 11px;border-radius:10px;background:var(--mint);color:var(--green);font-size:13px}.planned-leftovers b{display:block;margin-bottom:3px}.leftover-mini{background:var(--mint);color:var(--green)}.menu-leftovers{margin-top:6px;padding:6px 8px;border-radius:10px;background:var(--mint);color:var(--green);font-size:11px;font-weight:750;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .urg-URGENT{border-left:5px solid var(--red)}.urg-NON_URGENT,.urg-BIENTOT,.urg-OK{border-left:5px solid #f0df8a}.badge{font-size:11px;font-weight:800;border-radius:999px;padding:4px 8px;background:var(--mint)}.stars{color:#ffc400!important;-webkit-text-fill-color:#ffc400;text-shadow:0 0 6px rgba(255,196,0,.7),0 1px 0 #fff1a8;letter-spacing:1px;font-weight:900}.product-title{display:flex;align-items:center;gap:9px}.product-icon{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:11px;background:#fff7d8;font-size:21px;box-shadow:inset 0 0 0 1px rgba(232,125,72,.18)}
+    .leftover-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.assignment-status{font-size:11px;font-weight:850;border-radius:999px;padding:5px 9px;white-space:nowrap}.assignment-assigned{background:#d9f2e3;color:#17623a}.assignment-partial{background:#fff0cf;color:#8a5700}.assignment-none{background:#edf0ef;color:#65716e}.leftover-assigned{background:#fbfffc;box-shadow:0 0 0 2px rgba(56,142,91,.12)}.leftover-partial{background:#fffdf7}
+    .leftover-plan{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;margin-top:11px;padding-top:11px;border-top:1px solid var(--line)}.leftover-plan>*{min-width:0}
+    .catalog-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.catalog-actions{display:flex;gap:12px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.decision-actions,.admin-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.admin-single{margin-top:14px}.admin-list .card{display:flex;align-items:center;justify-content:space-between;gap:8px}.store-aisle-board{display:grid;gap:14px}.store-aisle-card{display:block;background:white;border:1px solid var(--line);border-radius:16px;padding:12px;margin:8px 0;box-shadow:0 2px 10px rgba(20,58,51,.035)}.store-aisle-card>.store-aisle-head{display:block;position:sticky;top:116px;z-index:4;background:white;border-bottom:1px solid var(--line);padding:4px 2px 10px;margin:0 0 10px}.store-aisle-card>.store-aisle-head h2{margin:0 0 3px}.admin-list .card[draggable=true]{cursor:grab}.admin-list .card.dragging{opacity:.45}.drag-handle{color:var(--muted);font-weight:900;margin-right:8px}.muted-row{opacity:.55;background:#f7f8f6}.inline-check{display:flex;align-items:center;gap:7px;margin:0;font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap}.inline-check input{width:auto}.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:90px;background:#17312d;color:white;padding:10px 16px;border-radius:12px;z-index:30;display:none}
+    .view-tip{background:#fffdf7;border:1px solid #f0dfbd;border-radius:14px;padding:10px 12px;margin:8px 0 12px;color:#765422;font-size:13px}.card-main{min-width:0}.card-topline{display:flex;align-items:center;justify-content:space-between;gap:8px}.chipline{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.season-list{display:flex;gap:8px;flex-wrap:wrap}.season-list .pill{font-size:13px;padding:7px 10px;background:white;border:1px solid var(--line);color:var(--ink)}.pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:4px 8px;background:#f1f6f4;color:var(--muted);font-size:11px;font-weight:750}.pill.hot{background:#fde7e2;color:var(--red)}.pill.warn{background:#fff0cf;color:#8a5700}.pill.ok{background:#d9f2e3;color:#17623a}.touch-action{min-height:42px}.course-done{width:42px;height:42px;border:0;border-radius:14px;background:var(--green);color:white;font-weight:900;font-size:18px}.course-card{grid-template-columns:46px minmax(0,1fr) minmax(110px,auto)}.undo-strip{margin:0 0 12px}.undo-row{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff0cf;border:1px solid #f0dfbd;border-radius:14px;padding:9px 11px;margin:6px 0}.undo-row .secondary{white-space:nowrap}.meal h2{margin-bottom:5px}.meal-empty{border-style:dashed;background:#fffdf7}.meal-link{display:inline-flex;margin-top:7px}.history-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.compact-actions button{padding:8px 10px}.status-buy{background:#d9f2e3;color:#17623a}.status-check{background:#fff0cf;color:#8a5700}.status-ignore{background:#fde7e2;color:var(--red)}.status-todo{background:#eef2f0;color:#566460}
+    @media(max-width:620px){main{padding:14px}header{padding:13px 14px 8px}.brand{font-size:19px}.section-head{align-items:flex-start;flex-wrap:wrap}.section-head .primary{width:100%}.form{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr 1fr}.item,.course-card{grid-template-columns:46px minmax(0,1fr)}.item .store,.course-card .store{grid-column:auto;max-width:100%;justify-self:stretch}.course-card{grid-template-columns:40px minmax(0,1fr) auto;gap:8px;align-items:center}.course-card .course-done{width:40px;height:40px}.course-card .course-edit{grid-column:3;grid-row:1;align-self:center;padding:8px 9px}.course-card .course-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}.course-card .course-meta .pill{justify-content:center;padding:5px 7px;font-size:10px}.course-card .chipline{gap:5px}.group-title{top:106px}.leftover-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start}.leftover-head .card-main>label{font-size:11px;margin-bottom:3px}.leftover-head .item-name{font-size:15px}.leftover-head .chipline{margin-top:4px;gap:4px}.leftover-head .pill{font-size:10px;padding:3px 6px}.assignment-status{font-size:10px;padding:4px 6px;max-width:112px;white-space:normal;text-align:center}.leftover-plan{grid-template-columns:minmax(116px,126px) minmax(70px,1fr);gap:6px;margin-top:7px;padding-top:7px;align-items:end}.leftover-plan label{font-size:10px;margin-bottom:3px}.leftover-plan input,.leftover-plan select{padding:8px 6px;font-size:12px;min-width:0}.leftover-date input{max-width:126px}.leftover-meal select{width:100%}.leftover-plan button{grid-column:1/-1;padding:8px 7px;font-size:12px}.leftover-plan+div.actions{margin-top:6px!important}.leftover-plan+div.actions .secondary{padding:7px 10px}.urg-URGENT,.urg-NON_URGENT,.urg-BIENTOT,.urg-OK{padding:9px;margin:6px 0}.catalog-row{grid-template-columns:1fr;align-items:stretch}.catalog-actions{justify-content:space-between;align-items:flex-start;width:100%}.decision-actions{justify-content:flex-start;max-width:62%}.admin-actions{justify-content:flex-end;max-width:36%}.catalog-actions button{flex:1 1 auto;min-width:0;padding-left:9px;padding-right:9px}.admin-grid{grid-template-columns:1fr}.card-topline{align-items:flex-start}.history-actions button{flex:1 1 110px}.week-table{grid-template-columns:64px minmax(0,1fr) minmax(0,1fr);gap:6px}.week-head{font-size:11px}.week-date{padding:8px 6px;font-size:12px}.week-date .sub{font-size:11px}.week-meal{padding:8px;min-height:72px}.week-meal h2{font-size:13px}nav button{font-size:11px}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="head"><div class="brand">Courses <span>&</span> Menus</div><div class="head-actions"><button class="save-now" title="Forcer la sauvegarde" onclick="manualSaveNow()">Sauver</button><button class="help-btn" title="Raccourcis" onclick="openShortcutsHelp()">?</button><div id="sync" class="sync">Connexion…</div></div></div>
+    <div id="courseToolbar" class="toolbar" style="display:none">
+      <button class="chip active" data-group="category">Par rayon</button>
+      <button class="chip" data-group="store">Par magasin</button>
+    </div>
+  </header>
+  <main>
+    <section id="courses" class="panel">
+      <div class="section-head"><div><h1>À acheter</h1><div class="sub">La liste active de la famille</div></div><button class="secondary" onclick="refreshCoursesManual()">Actualiser</button></div>
+      <div id="courseStats" class="summary"></div>
+      <input id="courseSearch" class="search" placeholder="Rechercher dans la liste…">
+      <div id="courseList"></div>
+    </section>
+    <section id="menus" class="panel active">
+      <div class="section-head"><div><h1>Menus</h1><div class="sub">Semaine du samedi, extensible à volonté</div></div><button class="secondary" onclick="showTab('history')">Historique</button><button class="secondary" onclick="shiftWindow(-1)">‹</button><button class="secondary" onclick="shiftWindow(1)">›</button></div>
+      <div id="days" class="days"></div><div id="menuList"></div>
+      <div class="actions"><button class="secondary" onclick="extendDays(-1)">+ avant</button><button class="secondary" onclick="extendDays(1)">+ après</button></div>
+    </section>
+    <section id="history" class="panel">
+      <div class="section-head"><div><h1>Historique menus</h1><div class="sub">Recherche d’idées par mot clé ou par saison</div></div></div>
+      <div class="form" style="margin-bottom:14px">
+        <div><label>Mot clé</label><input id="historySearchPage" placeholder="curry, courgette, barbecue…"></div>
+        <div><label>Mois</label><select id="historyMonth"><option value="">Tous les mois</option><option value="01">Janvier</option><option value="02">Février</option><option value="03">Mars</option><option value="04">Avril</option><option value="05">Mai</option><option value="06">Juin</option><option value="07">Juillet</option><option value="08">Août</option><option value="09">Septembre</option><option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option></select></div>
+        <div><label>Note minimale</label><select id="historyRating"><option value="">Toutes les notes</option><option value="5">★★★★★</option><option value="4">★★★★ et +</option><option value="3">★★★ et +</option><option value="2">★★ et +</option><option value="1">★ et +</option></select></div>
+        <div class="full"><button class="primary" type="button" onclick="loadHistoryPage()">Rechercher</button></div>
+      </div>
+      <div id="historyPageResults" class="sub">Choisissez un mot clé ou un mois, puis cliquez sur Rechercher.</div>
+    </section>
+    <section id="ideas" class="panel">
+      <div class="section-head"><div><h1>À tester</h1><div class="sub">Plats envie, à planifier plus tard</div></div></div>
+      <input id="ideaSearch" class="search" placeholder="Rechercher un plat, une recette, un commentaire…">
+      <div id="ideasList"></div>
+    </section>
+    <section id="restes" class="panel">
+      <div class="section-head"><div><h1>Restes</h1><div class="sub">À utiliser avant qu’ils ne deviennent une expérience scientifique</div></div><button class="danger" onclick="resetLeftoversConfirm()">Réinitialiser</button></div>
+      <div class="toolbar" id="leftoverFilters">
+        <button class="chip active" data-leftover-filter="all">Tous</button>
+        <button class="chip" data-leftover-filter="unassigned">Non affectés</button>
+        <button class="chip" data-leftover-filter="assigned">Affectés</button>
+        <button class="chip" data-leftover-filter="partial">À compléter</button>
+      </div>
+      <div id="leftoverList"></div>
+    </section>
+    <section id="saison" class="panel">
+      <div class="section-head"><div><h1>Légumes de saison</h1><div class="sub">Repères issus de l’onglet LEGUMES SAISON SYNTHESE</div></div></div>
+      <div class="form" style="margin-bottom:14px"><div><label>Mois</label><select id="seasonMonth" onchange="S.seasonMonth=Number(this.value);renderSeason()"></select></div></div>
+      <div id="seasonList"></div>
+    </section>
+    <section id="catalogue" class="panel">
+      <div class="section-head"><div><h1>Référentiel</h1><div class="sub">Décidez quoi acheter cette semaine</div></div><button class="secondary" onclick="refreshCatalogManual()">Actualiser</button><button class="primary" onclick="startPreparation()">Nouvelle préparation</button></div>
+      <div id="prepStats" class="summary"></div>
+      <div class="toolbar" id="prepFilters">
+        <button class="chip active" data-prep-filter="all">Tous</button>
+        <button class="chip" data-prep-filter="todo">Non traités</button>
+        <button class="chip" data-prep-filter="check">À vérifier</button>
+        <button class="chip" data-prep-filter="buy">À acheter</button>
+        <button class="chip" data-prep-filter="ignored">Écartés</button>
+      </div>
+      <input id="catalogSearch" class="search" placeholder="Chercher un produit à ajouter…">
+      <div id="catalogList"></div>
+    </section>
+    <section id="admin" class="panel">
+      <div class="section-head"><div><h1>Admin</h1><div class="sub">Listes utilisées dans les formulaires</div></div></div>
+      <div class="toolbar" id="adminTabs">
+        <button class="chip active" data-admin-view="stores">Magasins</button>
+        <button class="chip" data-admin-view="aisles">Rayons</button>
+        <button class="chip" data-admin-view="storeAisles">Rayons par magasin</button>
+        <button class="chip" data-admin-view="family">Chouchou / Loulou</button>
+        <button class="chip" data-admin-view="leftovers">Restes</button>
+      </div>
+      <div id="adminList" class="admin-single"></div>
+    </section>
+  </main>
+  <button id="fab" class="fab" aria-label="Ajouter">+</button>
+</div>
+<nav>
+  <button class="active" data-tab="courses"><b>🛒</b>Courses</button>
+  <button data-tab="menus"><b>🍽️</b>Menus</button>
+  <button data-tab="history"><b>🗓️</b>Historique</button>
+  <button data-tab="ideas"><b>💡</b>À tester</button>
+  <button data-tab="restes"><b>🥡</b>Restes</button>
+  <button data-tab="saison"><b>&#129365;</b>Saison</button>
+  <button data-tab="catalogue"><b>📋</b>Référentiel</button>
+  <button data-tab="admin"><b>⚙️</b>Admin</button>
+</nav>
+<dialog id="modal"><div id="modalBody" class="modal"></div></dialog>
+<div id="toast" class="toast"></div>
+<script>
+const S={data:null,tab:'menus',group:'category',prepFilter:'all',leftoverFilter:'all',adminView:'stores',search:'',catalogSearch:'',selectedDate:null,start:null,before:0,after:6,seasonMonth:null,poll:null,busy:false,pendingAdds:{},keepLeftovers:{},pendingSyncs:0,syncChain:Promise.resolve(),renderQueued:false,lastLocalSync:0,historySearchCache:{}};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const MOCK={revision:'demo',today:new Date().toISOString().slice(0,10),settings:{weekStart:6},catalogue:[
+ {ID:'c1',TYPOLOGIE:'Fruits et légumes',PRODUIT:'Pommes',MAGASIN_DEFAUT:'Lidl',RAYON:'Fruits',CONDITIONNEMENT:'1 sachet',QUANTITE_DEFAUT:'1',DERNIER_ACHAT:'2026-06-28'},
+ {ID:'c2',TYPOLOGIE:'Crèmerie',PRODUIT:'Œufs',MAGASIN_DEFAUT:'Lidl',RAYON:'Frais',CONDITIONNEMENT:'Boîte de 12',QUANTITE_DEFAUT:'12'},
+ {ID:'c3',TYPOLOGIE:'Épicerie',PRODUIT:'Riz',MAGASIN_DEFAUT:'Leclerc',RAYON:'Féculents',CONDITIONNEMENT:'1 kg',QUANTITE_DEFAUT:'1'}
+],courses:[
+ {ID:'q1',CATALOGUE_ID:'c1',PRODUIT:'Pommes',TYPOLOGIE:'Fruits et légumes',MAGASIN_ACTUEL:'Lidl',RAYON:'Fruits',QUANTITE:'1',CONDITIONNEMENT:'1 sachet',COMMENTAIRE:''},
+ {ID:'q2',CATALOGUE_ID:'c2',PRODUIT:'Œufs',TYPOLOGIE:'Crèmerie',MAGASIN_ACTUEL:'Lidl',RAYON:'Frais',QUANTITE:'12',CONDITIONNEMENT:'',COMMENTAIRE:'Pour le brunch'}
+],preparation:[],menus:[],restes:[{ID:'r1',NOM:'Ratatouille',QUANTITE:'2',UNITE:'parts',DATE_LIMITE:'2026-07-08',URGENCE:'BIENTOT',DATE_UTILISATION:'',REPAS:'',STATUT:'DISPONIBLE',CATEGORIE:'Plats préparés'}],recettes:[],ideesPlats:[{ID:'i1',PLAT:'Lasagnes aux courgettes',URL:'',COMMENTAIRE:'Idée été',STATUT:'A_TESTER'}],references:{stores:[{ID:'s1',TYPE:'MAGASIN',VALEUR:'Lidl',ACTIF:true,ORDRE:1},{ID:'s2',TYPE:'MAGASIN',VALEUR:'Leclerc',ACTIF:true,ORDRE:2}],aisles:[{ID:'a1',TYPE:'RAYON',VALEUR:'Fruits',ACTIF:true,ORDRE:1},{ID:'a2',TYPE:'RAYON',VALEUR:'Frais',ACTIF:true,ORDRE:2}]},history:[{ID:'h1',DATE:'2026-06-28',REPAS:'SOIR',PERSONNES:'4',MENU:'Curry de poulet cajou et coco',COMMENTAIRE:'Avec du riz'}]};
+function defaultData(){
+ const today=new Date().toISOString().slice(0,10);
+ return normalizeData({revision:'local-'+Date.now(),today,settings:{weekStart:6},catalogue:[],courses:[],preparation:[],menus:[],restes:[],recettes:[],ideesPlats:[],references:{stores:[],aisles:[],childLocations:[],leftoverCategories:[],storeAisleOrders:{},hiddenStoreAisles:{},deleted:{}},legumesSaison:[],history:[]})
+}
+function ensureData(){if(!S.data)S.data=defaultData();return S.data}
+function server(name,...args){
+ if(typeof google==='undefined')return mockServer(name,args);
+ return new Promise((resolve,reject)=>google.script.run.withSuccessHandler(resolve).withFailureHandler(e=>reject(new Error(e.message||e)))[name](...args))
+}
+function mockServer(name,args){if(name==='getBootstrap')return Promise.resolve(structuredClone(MOCK));if(name==='getRevision')return Promise.resolve({revision:MOCK.revision});if(name==='searchMenuHistory')return Promise.resolve(MOCK.history);return Promise.resolve({ok:true})}
+async function boot(){try{initMenuSwipe();initKeyboardShortcuts();const home=readHomeCache();S.data=normalizeData(home||defaultData());applyPendingMenuStatesLocally();S.start=saturdayFor(S.data.today);S.selectedDate=S.selectedDate||S.data.today;render();setSyncStatus('⏳ Actualisation légère','pending',true);setTimeout(continueBoot,0)}catch(e){fail(e)}}
+async function continueBoot(){try{const cached=readClientCache();if(cached){S.data=mergeLightData(S.data,normalizeData(cached));applyPendingPrepDecisionsLocally();applyPendingCourseSavesLocally();applyPendingBoughtCoursesLocally();applyPendingMenuStatesLocally();S.catalogLoaded=!!S.data.catalogue.length;S.shoppingLoaded=!!(S.data.courses.length||S.data.preparation.length);S.start=saturdayFor(S.data.today);S.selectedDate=S.selectedDate||S.data.today;render()}const light=normalizeData(await server('getBootstrapHome').catch(()=>server('getBootstrapLight').catch(()=>server('getBootstrap'))));S.catalogLoaded=!!(S.data&&S.data.catalogue&&S.data.catalogue.length);S.shoppingLoaded=!!(S.data&&(S.data.courses.length||S.data.preparation.length));S.data=mergeLightData(S.data,light);applyPendingPrepDecisionsLocally();applyPendingCourseSavesLocally();applyPendingBoughtCoursesLocally();applyPendingMenuStatesLocally();S.catalogLoaded=S.catalogLoaded||!!S.data.catalogue.length;S.shoppingLoaded=S.shoppingLoaded||!!(S.data.courses.length||S.data.preparation.length);S.historySearchCache={};writeClientCache();S.start=saturdayFor(S.data.today);S.selectedDate=S.selectedDate||S.data.today;render();resumePendingSyncs();updateSyncStatus();startPoll()}catch(e){fail(e)}}
+function startPoll(){clearInterval(S.poll);S.poll=setInterval(async()=>{const data=ensureData();if(S.busy||S.pendingSyncs||S.deferredSyncs||pendingLocalCount()||S.catalogLoading||S.shoppingLoading||S.courseSaveInFlight||S.tab==='catalogue'||S.tab==='admin')return;try{const x=await server('getRevision');if(x.revision!==data.revision){if(Date.now()-S.lastLocalSync<12000){data.revision=x.revision;writeClientCache()}else if(S.tab==='courses'){setSyncStatus('⏳ Actualisation courses','pending',true);await loadShoppingData(true);toast('Courses mises à jour')}else{setSyncStatus('⏳ Actualisation légère','pending',true);const light=normalizeData(await server('getBootstrapLight').catch(()=>server('getBootstrap')));S.data=mergeLightData(data,light);S.catalogLoaded=false;S.shoppingLoaded=false;S.historySearchCache={};writeClientCache();renderActive();toast('Liste mise à jour')}}updateSyncStatus()}catch(e){console.warn('Synchronisation passive indisponible',e)}},3500)}
+function render(){ensureData();$$('nav button').forEach(x=>x.classList.toggle('active',x.dataset.tab===S.tab));$$('.panel').forEach(x=>x.classList.toggle('active',x.id===S.tab));$('#courseToolbar').style.display=S.tab==='courses'?'flex':'none';renderActive()}
+function renderActive(){
+ ensureData();
+ if(S.tab==='courses'){loadShoppingData();renderCourses()}
+ else if(S.tab==='menus')renderMenus();
+ else if(S.tab==='history')renderHistoryPage();
+ else if(S.tab==='ideas')renderIdeas();
+ else if(S.tab==='restes')renderLeftovers();
+ else if(S.tab==='saison')renderSeason();
+ else if(S.tab==='catalogue'){loadCatalogData();renderCatalog()}
+ else if(S.tab==='admin')renderAdmin();
+ updateFab()
+}
+
+function renderIdeas(){
+ const box=$('#ideasList');if(!box)return;
+ const q=searchKey($('#ideaSearch')?.value||'');
+ const items=[...(S.data.ideesPlats||[])].filter(x=>x.STATUT!=='SUPPRIME').filter(x=>!q||searchKey([x.PLAT,x.URL,x.COMMENTAIRE,x.EVALUATION].join(' ')).includes(q)).sort((a,b)=>String(a.PLAT).localeCompare(String(b.PLAT)));
+ box.innerHTML=items.length?items.map(ideaCard).join(''):q?empty('🔎','Aucun plat trouvé','Essayez un autre mot clé.'):empty('💡','Aucun plat à tester','Ajoutez une idée de plat avec le bouton +.');
+}
+function renderSeason(){
+ const box=$('#seasonList');if(!box)return;
+ const todayMonth=Number(String(S.data.today||new Date().toISOString().slice(0,10)).slice(5,7))||new Date().getMonth()+1;
+ const month=S.seasonMonth||todayMonth;S.seasonMonth=month;
+ const select=$('#seasonMonth');if(select)select.innerHTML=Array.from({length:12},(_,i)=>{const m=i+1;return `<option value="${m}" ${m===month?'selected':''}>${monthName(m)}</option>`}).join('');
+ const items=[...(S.data.legumesSaison||[])].filter(x=>Number(x.MOIS)===month).map(x=>x.ITEM).filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b),'fr'));
+ box.innerHTML=items.length?`<div class="card"><div class="meal-top"><h2>${monthName(month)}</h2><span class="badge">${items.length} légume(s)</span></div><div class="season-list">${items.map(x=>`<span class="pill">🥕 ${esc(x)}</span>`).join('')}</div></div>`:empty('🥕','Aucun légume renseigné','Relancez setupApp pour initialiser la liste de saison.');
+}
+function monthName(month){return new Intl.DateTimeFormat('fr-FR',{month:'long'}).format(new Date(2026,Number(month)-1,1))}
+function adminBlock(type,title,items){
+ return `<div class="admin-list" data-ref-type="${type}"><div class="section-head"><div><h2>${title}</h2><div class="sub">${items.length} valeur(s)</div></div><button class="primary" onclick="openReference('${type}')">Ajouter</button></div>${items.length?items.map(x=>`<div class="card" draggable="true" data-ref-id="${esc(x.ID)}" ondragstart="startReferenceDrag(event)" ondragover="overReferenceDrag(event)" ondrop="dropReference(event)" ondragend="endReferenceDrag(event)"><div><span class="drag-handle">☰</span><b>${esc(x.VALEUR)}</b></div><div class="catalog-actions"><button class="secondary" onclick="openReference('${type}','${x.ID}')">Modifier</button><button class="danger" onclick="removeReference('${x.ID}')">Supprimer</button></div></div>`).join(''):empty('⚙️','Aucune valeur','Ajoutez une première valeur.')}</div>`;
+}
+function storeAisleAdminBlock(stores,aisles){
+ if(!stores.length||!aisles.length)return `<div class="admin-list"><h2>Ordre des rayons par magasin</h2>${empty('🧭','Ordre par magasin indisponible','Ajoutez au moins un magasin et un rayon.')}</div>`;
+ return `<div class="store-aisle-board"><div class="section-head"><div><h2>Ordre des rayons par magasin</h2><div class="sub">Glissez les rayons dans l’ordre réel de chaque magasin.</div></div></div>${stores.map(store=>storeAisleList(store.VALEUR,aisles)).join('')}</div>`
+}
+function storeAisleList(store,aisles){
+ const configured=(S.data.references?.storeAisleOrders?.[store]||[]).map(x=>x.AISLE).filter(Boolean);
+ const hidden=(S.data.references?.hiddenStoreAisles?.[store]||[]).filter(Boolean);
+ const known=[...configured,...hidden];
+ const extra=aisles.map(x=>x.VALEUR).filter(v=>!known.includes(v));
+ const rows=[...configured.map(x=>({aisle:x,visible:true})),...extra.map(x=>({aisle:x,visible:true})),...hidden.map(x=>({aisle:x,visible:false}))];
+ const visibleCount=rows.filter(x=>x.visible).length;
+ return `<div class="store-aisle-card"><div class="store-aisle-head"><h2>${esc(store)}</h2><div class="sub">${visibleCount}/${rows.length} rayon(s) affiché(s)</div></div><div class="admin-list nested-admin-list" data-store-aisles="1" data-store="${esc(store)}">${rows.map((row,i)=>`<div class="card compact-card ${row.visible?'':'muted-row'}" draggable="true" data-ref-id="${esc(store+'|'+row.aisle)}" data-aisle-value="${esc(row.aisle)}" ondragstart="startReferenceDrag(event)" ondragover="overReferenceDrag(event)" ondrop="dropReference(event)" ondragend="endReferenceDrag(event)"><div><span class="drag-handle">☰</span><b>${esc(row.aisle)}</b></div><label class="inline-check"><input type="checkbox" ${row.visible?'checked':''} onchange="saveStoreAisleOrderFromDom(this.closest('[data-store-aisles]'))"> Afficher <span class="sub">#${i+1}</span></label></div>`).join('')}</div></div>`
+}
+function markPending(el){const card=el?.closest?.('.card');if(card)card.classList.add('pending')}
+function queueRender(fn=renderActive){if(S.renderQueued)return;S.renderQueued=true;requestAnimationFrame(()=>setTimeout(()=>{S.renderQueued=false;fn()},0))}
+function markLocalChange(){S.lastLocalSync=Date.now();if(S.data)S.data.revision=String(Date.now())}
+function scheduleCoursesRender(delay=140){clearTimeout(S.courseRenderTimer);S.courseRenderTimer=setTimeout(()=>{S.courseRenderTimer=null;if(S.tab==='courses')renderCourses()},delay)}
+function scheduleMenusRender(delay=120){clearTimeout(S.menuRenderTimer);S.menuRenderTimer=setTimeout(()=>{S.menuRenderTimer=null;if(S.tab==='menus')renderMenus()},delay)}
+function renderMenusNow(){clearTimeout(S.menuRenderTimer);S.menuRenderTimer=null;if(S.tab==='menus')renderMenus()}
+function isLocalCourseId(id){return /^local-|^course-/.test(String(id||''))}
+function buy(id,el){
+ markPending(el);
+ const item=S.data.courses.find(c=>String(c.ID)===String(id));if(!item)return;
+ S.data.courses=S.data.courses.filter(c=>String(c.ID)!==String(id));
+ if(S.pendingCourseSaves&&S.pendingCourseSaves[id])delete S.pendingCourseSaves[id];
+ S.pendingBoughtCourses=S.pendingBoughtCourses||{};S.pendingBoughtCourses[id]=item;
+ S.recentBought=(S.recentBought||[]).filter(x=>String(x.ID)!==String(id));S.recentBought.push(item);if(S.recentBought.length>5)S.recentBought=S.recentBought.slice(-5);
+ markLocalChange();const card=el?.closest?.('.card');if(card)card.remove();scheduleCoursesRender();toast('Article ajouté au panier');writeClientCache();scheduleBoughtFlush();
+}
+function undoBuy(id){
+ const item=(S.recentBought||[]).find(x=>String(x.ID)===String(id))||(S.pendingBoughtCourses||{})[id];if(!item)return;
+ S.recentBought=(S.recentBought||[]).filter(x=>String(x.ID)!==String(id));
+ if(S.pendingBoughtCourses&&S.pendingBoughtCourses[id])delete S.pendingBoughtCourses[id];
+ if(!S.data.courses.some(c=>String(c.ID)===String(id)))S.data.courses.push(item);
+ markLocalChange();scheduleCoursesRender(80);toast('Article remis dans la liste');writeClientCache();
+ if(!String(id).startsWith('local-'))backgroundSync(()=>server('reopenCourse',id),()=>{S.data.courses=S.data.courses.filter(c=>String(c.ID)!==String(id));S.recentBought.push(item)})
+}
+function scheduleBoughtFlush(){clearTimeout(S.boughtFlushTimer);S.boughtFlushTimer=setTimeout(flushBoughtCourses,500)}
+function flushBoughtCourses(){
+ if(S.boughtFlushInFlight)return;
+ const entries=Object.entries(S.pendingBoughtCourses||{});
+ const ids=entries.map(([id,item])=>String((item&&item.ID)||id)).filter(id=>!isLocalCourseId(id));
+ if(!ids.length){writeClientCache();return}
+ S.boughtFlushInFlight=true;writeClientCache();
+ backgroundSync(()=>server('completeCourses',ids).then(res=>{entries.forEach(([key,item])=>{if(ids.includes(String((item&&item.ID)||key)))delete S.pendingBoughtCourses[key]});writeClientCache();return res}),()=>{entries.forEach(([,item])=>{if(!S.data.courses.some(c=>String(c.ID)===String(item.ID)))S.data.courses.push(item)})}).finally(()=>{S.boughtFlushInFlight=false;if(Object.keys(S.pendingBoughtCourses||{}).length)scheduleBoughtFlush()})
+}
+function flushAllPendingNow(){
+ writeClientCache();
+ if(Object.keys(S.pendingPrepDecisions||{}).length)flushPrepDecisions();
+ if(Object.keys(S.pendingStoreMoves||{}).length)flushStoreMoves();
+ if(Object.keys(S.pendingBoughtCourses||{}).length)flushBoughtCourses();
+ if(Object.keys(S.pendingCourseSaves||{}).length)flushCourseSaves();
+ if(Object.keys(S.pendingMenuStates||{}).length)flushMenuStates();
+ return S.syncChain;
+}
+function manualSaveNow(){
+ setSyncStatus('⏳ Sauvegarde demandée','pending',true);
+ Promise.resolve(flushAllPendingNow()).then(()=>new Promise(resolve=>setTimeout(resolve,650))).then(()=>S.syncChain).then(()=>{updateSyncStatus();toast(isFullySynced()?'Sauvegarde terminée':'Sauvegarde lancée')}).catch(fail);
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushAllPendingNow()});
+window.addEventListener('pagehide',flushAllPendingNow);
+window.addEventListener('beforeunload',flushAllPendingNow);
+function addCatalog(id,el){
+ markPending(el);
+ const x=S.data.catalogue.find(c=>c.ID===id);
+ if(!x||S.data.courses.some(c=>c.CATALOGUE_ID===id))return;
+ const optimistic={ID:'local-'+Date.now(),CATALOGUE_ID:id,PRODUIT:x.PRODUIT,TYPOLOGIE:x.TYPOLOGIE,MAGASIN_DEFAUT:x.MAGASIN_DEFAUT,MAGASIN_ACTUEL:x.MAGASIN_DEFAUT,RAYON:x.RAYON,QUANTITE:x.QUANTITE_DEFAUT||'1',CONDITIONNEMENT:x.CONDITIONNEMENT,COMMENTAIRE:'',STATUT:'A_ACHETER'};
+ S.data.courses.push(optimistic);queueRender(renderCatalog);toast('Ajouté aux courses');
+ const request=()=>server('saveCourse',{catalogueId:id,quantity:x.QUANTITE_DEFAUT||'1'}).then(saved=>{Object.assign(optimistic,saved);return saved}).finally(()=>{delete S.pendingAdds[id];if(Object.keys(S.pendingBoughtCourses||{}).length)scheduleBoughtFlush(150)});S.pendingAdds[id]=request;
+ backgroundSync(request,()=>{S.data.courses=S.data.courses.filter(c=>c.ID!==optimistic.ID)})
+}
+function removeCatalog(id){
+ const removed=S.data.courses.filter(c=>c.CATALOGUE_ID===id);
+ if(!removed.length)return;
+ S.data.courses=S.data.courses.filter(c=>c.CATALOGUE_ID!==id);queueRender(renderCatalog);toast('Retiré des courses');
+ const deletions=()=>Promise.all(removed.map(c=>String(c.ID).startsWith('local-')&&S.pendingAdds[id]?S.pendingAdds[id]().then(saved=>server('deleteCourse',saved.ID)):server('deleteCourse',c.ID)));
+ backgroundSync(deletions,()=>{S.data.courses.push(...removed)})
+}
+function startPreparation(){
+ if(!S.catalogLoaded){loadCatalogData(true);toast('Référentiel en cours de chargement');return}
+ if(!confirm('Démarrer une nouvelle préparation ? La liste de courses en cours sera réinitialisée à partir du référentiel.'))return;
+ const previous=structuredClone({courses:S.data.courses||[],preparation:S.data.preparation||[],prepFilter:S.prepFilter});
+ const now=new Date().toISOString();
+ S.preparationSyncing=true;
+ S.data.courses=[];
+ S.data.preparation=(S.data.catalogue||[]).filter(x=>x.ACTIF!==false&&x.ACTIF!=='FALSE').map((x,i)=>({ID:'local-prep-'+String(x.ID||i),CATALOGUE_ID:x.ID,PRODUIT:x.PRODUIT,TYPOLOGIE:x.TYPOLOGIE,MAGASIN_DEFAUT:x.MAGASIN_DEFAUT,MAGASIN_ACTUEL:x.MAGASIN_DEFAUT,RAYON:x.RAYON,QUANTITE:x.QUANTITE_DEFAUT||'1',CONDITIONNEMENT:x.CONDITIONNEMENT,COMMENTAIRE:'',STATUT:'A_DECIDER',AJOUTE_LE:now,ACHETE_LE:'',MAJ:now}));
+ S.prepFilter='todo';markLocalChange();syncPrepFilterButtons();renderCatalog();toast('Préparation réinitialisée');writeClientCache();
+ backgroundSync(()=>server('startNewPreparation').then(result=>{S.preparationSyncing=false;reconcilePreparationIds(result?.candidates||[]);writeClientCache();flushPrepDecisions();return result}),()=>{S.data.courses=previous.courses;S.data.preparation=previous.preparation;S.prepFilter=previous.prepFilter;S.preparationSyncing=false;syncPrepFilterButtons();renderActive()})
+}
+function syncPrepFilterButtons(){$$('[data-prep-filter]').forEach(x=>x.classList.toggle('active',x.dataset.prepFilter===S.prepFilter))}
+function syncLeftoverFilterButtons(){$$('[data-leftover-filter]').forEach(x=>x.classList.toggle('active',x.dataset.leftoverFilter===S.leftoverFilter))}
+function reconcilePreparationIds(candidates){const byCatalog=new Map((candidates||[]).map(x=>[String(x.CATALOGUE_ID),x]));const pending=S.pendingPrepDecisions||{};[...(S.data.preparation||[]),...(S.data.courses||[])].forEach(row=>{if(!String(row.ID||'').startsWith('local-prep-'))return;const saved=byCatalog.get(String(row.CATALOGUE_ID));if(!saved)return;const oldId=String(row.ID),localStatus=row.STATUT,localComment=row.COMMENTAIRE;Object.assign(row,saved,{STATUT:localStatus,COMMENTAIRE:localComment});if(pending[oldId]){pending[row.ID]=Object.assign({},pending[oldId],{catalogueId:row.CATALOGUE_ID});delete pending[oldId]}});S.pendingPrepDecisions=pending}
+async function mutate(fn,after){if(S.busy)return;S.busy=true;setSyncStatus('⏳ Enregistrement','pending',true);try{const result=await fn();if(after)after(result);else{S.data=normalizeData(await server('getBootstrap'));renderActive()}S.lastLocalSync=Date.now();writeClientCache();return result}catch(e){fail(e)}finally{S.busy=false;updateSyncStatus()}}
+function backgroundSync(work,rollback){
+ writeClientCache();
+ S.pendingSyncs++;
+ updateSyncStatus();
+ const job=S.syncChain.then(async()=>{
+  try{
+   const result=await (typeof work==='function'?work():work);
+   S.lastLocalSync=Date.now();S.data.revision=String(Date.now());writeClientCache();
+   return result;
+  }catch(e){
+   if(isTransientSyncError(e)){
+    S.lastLocalSync=Date.now()+300000;
+    S.deferredSyncs=(S.deferredSyncs||0)+1;
+    writeClientCache();
+    setSyncStatus('En attente réseau — sauvegarde locale conservée','pending');
+    setTimeout(()=>{S.deferredSyncs=Math.max(0,(S.deferredSyncs||0)-1);backgroundSync(work,rollback)},Math.min(60000,8000+(S.pendingSyncs*2000)));
+    return;
+   }
+   if(rollback)rollback();
+   writeClientCache();renderActive();fail(e);
+  }finally{
+   S.pendingSyncs=Math.max(0,S.pendingSyncs-1);
+   updateSyncStatus();
+  }
+ });
+ S.syncChain=job.catch(()=>{});
+ return job;
+}
+function pendingLocalCount(){return Object.keys(S.pendingPrepDecisions||{}).length+Object.keys(S.pendingStoreMoves||{}).length+Object.keys(S.pendingBoughtCourses||{}).length+Object.keys(S.pendingCourseSaves||{}).length+Object.keys(S.pendingMenuStates||{}).length}
+function setSyncStatus(text,state='ok',force=false){const x=$('#sync');if(!x)return;if(!force&&state==='ok'&&!isFullySynced()){updateSyncStatus();return}x.textContent=text;x.className='sync '+state;x.title=syncDetailsText()}
+function syncDetailsText(){const local=pendingLocalCount();if(isFullySynced())return 'Toutes les données locales ont été confirmées par le serveur.';return `${local} action(s) locale(s) en attente, ${S.pendingSyncs||0} synchro(s) en cours${S.deferredSyncs?`, ${S.deferredSyncs} retry réseau`:''}.`}
+function isFullySynced(){return !S.pendingSyncs&&!S.deferredSyncs&&!pendingLocalCount()&&!S.prepFlushInFlight&&!S.storeFlushInFlight&&!S.boughtFlushInFlight&&!S.courseSaveInFlight&&!S.menuStateInFlight&&!S.catalogLoading&&!S.shoppingLoading}
+function updateSyncStatus(){const local=pendingLocalCount();if(isFullySynced())return setSyncStatus('✅ À jour','ok',true);if(S.deferredSyncs)return setSyncStatus(`⏳ En attente réseau · ${local||S.deferredSyncs}`,'pending',true);if(S.pendingSyncs||S.prepFlushInFlight||S.storeFlushInFlight||S.boughtFlushInFlight||S.courseSaveInFlight||S.menuStateInFlight)return setSyncStatus(`⏳ Sauvegarde en cours · ${local}`,'pending',true);if(local)return setSyncStatus(`⚠️ ${local} action(s) à sauvegarder`,'pending',true);setSyncStatus('⏳ Chargement…','pending',true)}
+function isTransientSyncError(e){const msg=String(e?.message||e||'').toLowerCase();return /network|connexion|internet|timeout|timed out|failed to fetch|hors connexion|temporarily|indisponible|serveur|server error|service unavailable/.test(msg)}
+function moveStore(id,store){
+ const item=S.data.courses.find(c=>c.ID===id);if(!item)return;
+ item.MAGASIN_ACTUEL=store;S.pendingStoreMoves=S.pendingStoreMoves||{};S.pendingStoreMoves[id]=store;
+ queueRender(renderCourses);toast('Magasin modifié');writeClientCache();scheduleStoreFlush();
+}
+function scheduleStoreFlush(){clearTimeout(S.storeFlushTimer);S.storeFlushTimer=setTimeout(flushStoreMoves,650)}
+function flushStoreMoves(){
+ if(S.storeFlushInFlight)return;
+ const entries=Object.entries(S.pendingStoreMoves||{});
+ const changes=entries.filter(([id])=>!String(id).startsWith('local-')).map(([id,store])=>({id,store}));
+ if(!changes.length){writeClientCache();return}
+ S.storeFlushInFlight=true;writeClientCache();
+ backgroundSync(()=>server('updateCourseStores',changes).then(res=>{(res.results||[]).forEach(saved=>{if(saved&&saved.ID){const item=S.data.courses.find(c=>String(c.ID)===String(saved.ID));if(item)Object.assign(item,saved)}});changes.forEach(x=>delete S.pendingStoreMoves[x.id]);writeClientCache();return res}),()=>{}).finally(()=>{S.storeFlushInFlight=false;if(Object.keys(S.pendingStoreMoves||{}).length)scheduleStoreFlush()})
+}
+function decidePreparation(id,status,el){
+ applyPreparationDecision(id,status,'',el)
+}
+function openBuyDecision(id,el){
+ const record=S.data.preparation.find(x=>x.ID===id)||S.data.courses.find(x=>x.ID===id);if(!record)return;
+ markPending(el);
+ shell(`Commentaire · ${esc(record.PRODUIT||'Produit')}`,`<input type="hidden" name="id" value="${esc(id)}"><div class="full"><label>Commentaire pour la liste de courses</label><textarea name="note" autofocus placeholder="Ex. marque, promo, quantité spéciale, point à vérifier...">${esc(record.COMMENTAIRE||'')}</textarea></div>`,v=>applyPreparationDecision(v.id,'A_ACHETER',v.note||'',el))
+}
+function applyPreparationDecision(id,status,note,el){
+ markPending(el);
+ const record=S.data.preparation.find(x=>x.ID===id)||S.data.courses.find(x=>x.ID===id);if(!record)return;
+ S.data.courses=S.data.courses.filter(x=>x.ID!==id);S.data.preparation=S.data.preparation.filter(x=>x.ID!==id);
+ record.STATUT=status;
+ if(status==='A_ACHETER')record.COMMENTAIRE=note||'';
+ if(status==='A_ACHETER')S.data.courses.push(record);else S.data.preparation.push(record);
+ S.pendingPrepDecisions=S.pendingPrepDecisions||{};S.pendingPrepDecisions[id]={status,note:record.COMMENTAIRE||'',catalogueId:record.CATALOGUE_ID||''};
+ queueRender(renderCatalog);toast(status==='A_ACHETER'?'Ajouté aux courses':status==='A_VERIFIER'?'À vérifier':status==='IGNORE'?'Écarté':'À décider');writeClientCache();updateSyncStatus();schedulePrepDecisionFlush();
+}
+function schedulePrepDecisionFlush(delay=650){clearTimeout(S.prepDecisionTimer);S.prepDecisionTimer=setTimeout(flushPrepDecisions,delay)}
+function flushPrepDecisions(){
+ if(S.prepFlushInFlight)return;
+ const entries=Object.entries(S.pendingPrepDecisions||{});
+ const changes=entries.map(([id,value])=>{const catalogueId=typeof value==='string'?'':value.catalogueId||'';let resolvedId=id;if(String(id).startsWith('local-')&&catalogueId){const row=[...(S.data.preparation||[]),...(S.data.courses||[])].find(x=>String(x.CATALOGUE_ID)===String(catalogueId)&&!String(x.ID).startsWith('local-'));if(row)resolvedId=row.ID}return {originalId:id,id:resolvedId,status:typeof value==='string'?value:value.status,note:typeof value==='string'?'':value.note||'',catalogueId}}).filter(x=>!String(x.id).startsWith('local-'));
+ if(!changes.length){writeClientCache();return}
+ S.prepFlushInFlight=true;writeClientCache();
+ backgroundSync(()=>server('setPreparationDecisions',changes).then(res=>{(res.results||[]).forEach(saved=>{if(saved&&saved.ID){S.data.courses=S.data.courses.filter(x=>String(x.ID)!==String(saved.ID));S.data.preparation=S.data.preparation.filter(x=>String(x.ID)!==String(saved.ID));if(saved.STATUT==='A_ACHETER')S.data.courses.push(saved);else if(['A_DECIDER','A_VERIFIER','IGNORE'].includes(saved.STATUT))S.data.preparation.push(saved)}});changes.forEach(x=>{delete S.pendingPrepDecisions[x.originalId];delete S.pendingPrepDecisions[x.id]});writeClientCache();return res}),()=>{}).finally(()=>{S.prepFlushInFlight=false;if(Object.keys(S.pendingPrepDecisions||{}).length)schedulePrepDecisionFlush(1500)})
+}
+function updateLeftoverPlan(id,field,value){
+ const x=S.data.restes.find(r=>r.ID===id);if(!x)return;
+ const previous={date:x.DATE_UTILISATION,meal:x.REPAS,status:x.STATUT};
+ if(field==='date')x.DATE_UTILISATION=value;else x.REPAS=value;
+ x.STATUT=x.DATE_UTILISATION?'PLANIFIE':'DISPONIBLE';if(S.tab==='restes')queueRender(renderLeftovers);else if(S.tab==='menus')renderMenuCellsForChange(previous.date,previous.meal,x.DATE_UTILISATION,x.REPAS);toast('Affectation mise à jour');
+ backgroundSync(()=>server('saveLeftover',leftoverPayload(x)),()=>{x.DATE_UTILISATION=previous.date;x.REPAS=previous.meal;x.STATUT=previous.status})
+}
+function clearLeftoverPlan(id){
+ const x=S.data.restes.find(r=>r.ID===id);if(!x)return;
+ const previous={date:x.DATE_UTILISATION,meal:x.REPAS,status:x.STATUT};
+ x.DATE_UTILISATION='';x.REPAS='';x.STATUT='DISPONIBLE';if(S.tab==='restes')queueRender(renderLeftovers);else if(S.tab==='menus')renderMenuCell(previous.date,previous.meal);toast('Reste désaffecté');
+ backgroundSync(()=>server('saveLeftover',leftoverPayload(x)),()=>{x.DATE_UTILISATION=previous.date;x.REPAS=previous.meal;x.STATUT=previous.status})
+}
+function toggleKeepLeftover(id,checked){S.keepLeftovers[id]=checked;if(!checked)delete S.keepLeftovers[id]}
+
+function selectDate(d){S.selectedDate=d;renderMenus()}function shiftWindow(n){S.start=addDays(S.start,n*7);S.selectedDate=S.start;renderMenus()}function extendDays(n){if(n<0)S.before++;else S.after++;renderMenus()}
+function initMenuSwipe(){const panel=$('#menus');if(!panel||S.menuSwipeReady)return;S.menuSwipeReady=true;let startX=0,startY=0,startT=0;panel.addEventListener('touchstart',e=>{if(S.tab!=='menus'||modal.open||e.touches.length!==1)return;const t=e.touches[0];startX=t.clientX;startY=t.clientY;startT=Date.now()},{passive:true});panel.addEventListener('touchend',e=>{if(S.tab!=='menus'||modal.open||!startT||!e.changedTouches.length)return;const t=e.changedTouches[0],dx=t.clientX-startX,dy=t.clientY-startY,elapsed=Date.now()-startT;startT=0;if(elapsed>900||Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.6||Math.abs(dy)>80)return;shiftWindow(dx<0?1:-1);toast(dx<0?'Semaine suivante':'Semaine précédente')},{passive:true})}
+function updateFab(){const show=['courses','restes','catalogue','ideas'].includes(S.tab)||(S.tab==='admin'&&S.adminView!=='storeAisles');$('#fab').style.display=show?'block':'none'}
+function openAdd(){if(S.tab==='courses')openCourse();else if(S.tab==='menus')openMenu({date:S.selectedDate||S.data.today,meal:'MIDI'});else if(S.tab==='restes')openLeftover();else if(S.tab==='catalogue')openCatalogItem();else if(S.tab==='admin')openAdminAdd();else if(S.tab==='ideas')openDishIdea()}
+function shell(title,body,save){$('#modalBody').innerHTML=`<div class="modal-head"><h2>${title}</h2><button class="close" onclick="modal.close()">×</button></div><form id="form" class="form">${body}<div class="actions full"><button type="button" class="secondary" onclick="modal.close()">Annuler</button><button class="primary">Enregistrer</button></div></form>`;const form=$('#form');form.onsubmit=e=>{e.preventDefault();save(Object.fromEntries(new FormData(e.target)));modal.close()};form.addEventListener('keydown',e=>{const tag=String(e.target?.tagName||'').toLowerCase();const pc=matchMedia('(pointer:fine)').matches;if(!pc||e.key!=='Enter'||e.shiftKey||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||tag==='textarea'||tag==='button')return;e.preventDefault();form.requestSubmit()});modal.showModal()}
+function openShortcutsHelp(){
+ $('#modalBody').innerHTML=`<div class="modal-head"><h2>Raccourcis disponibles</h2><button class="close" onclick="modal.close()">×</button></div><div class="card"><h3>PC · clavier</h3><div class="chipline"><span class="pill">?</span><span class="sub">Afficher cette aide</span></div><div class="chipline"><span class="pill">Alt + 1 à 8</span><span class="sub">Changer de vue</span></div><div class="chipline"><span class="pill">Ctrl + K</span><span class="sub">Placer le curseur dans la recherche de la vue</span></div><div class="chipline"><span class="pill">N</span><span class="sub">Ajouter dans la vue courante, si disponible</span></div><div class="chipline"><span class="pill">Entrée</span><span class="sub">Enregistrer une édition hors champ multiligne</span></div><div class="chipline"><span class="pill">Ctrl + S</span><span class="sub">Enregistrer la fenêtre d’édition ouverte</span></div><div class="chipline"><span class="pill">Ctrl + Shift + S</span><span class="sub">Forcer la sauvegarde de toutes les actions en attente</span></div><div class="chipline"><span class="pill">Échap</span><span class="sub">Fermer la fenêtre ouverte</span></div></div><div class="card"><h3>Téléphone · gestes/actions rapides</h3><div class="chipline"><span class="pill">Sauver</span><span class="sub">Forcer manuellement la sauvegarde avant de quitter</span></div><div class="chipline"><span class="pill">Swipe</span><span class="sub">Dans Menus, passer à la semaine précédente/suivante</span></div><div class="chipline"><span class="pill">+</span><span class="sub">Ajouter dans la vue courante</span></div><div class="chipline"><span class="pill">Pastille rouge/jaune/verte</span><span class="sub">Changer l’état d’un menu sans l’ouvrir</span></div><div class="chipline"><span class="pill">✓</span><span class="sub">Dans Courses, cocher immédiatement un article acheté</span></div><div class="chipline"><span class="pill">Annuler</span><span class="sub">Dans Courses, revenir en arrière après une coche accidentelle</span></div></div><div class="actions"><button class="primary" onclick="modal.close()">OK</button></div>`;
+ modal.showModal();
+}
+function activeSearchInput(){return S.tab==='courses'?$('#courseSearch'):S.tab==='catalogue'?$('#catalogSearch'):S.tab==='ideas'?$('#ideaSearch'):S.tab==='history'?$('#historySearchPage'):null}
+function initKeyboardShortcuts(){
+ if(S.keyboardShortcutsReady)return;S.keyboardShortcutsReady=true;
+ document.addEventListener('keydown',e=>{
+  const tag=String(e.target?.tagName||'').toLowerCase();
+  const typing=['input','select','textarea'].includes(tag);
+  if(e.key==='Escape'&&modal.open){e.preventDefault();modal.close();return}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'&&e.shiftKey){e.preventDefault();manualSaveNow();return}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'&&modal.open){e.preventDefault();$('#form')?.requestSubmit();return}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){const input=activeSearchInput();if(input){e.preventDefault();input.focus();input.select?.()}return}
+  if(e.altKey&&/^[1-8]$/.test(e.key)){const tabs=['courses','menus','history','ideas','restes','saison','catalogue','admin'];e.preventDefault();showTab(tabs[Number(e.key)-1]);return}
+  if(typing||modal.open||e.ctrlKey||e.metaKey||e.altKey||e.isComposing)return;
+  if(e.key==='?'){e.preventDefault();openShortcutsHelp();return}
+  if(e.key.toLowerCase()==='n'){e.preventDefault();openAdd();return}
+ })
+}
+function openCourse(x={}){
+ shell(x.ID?'Modifier le produit à acheter':'Ajouter aux courses',`<input type="hidden" name="id" value="${esc(x.ID||'')}"><input type="hidden" name="catalogueId" value="${esc(x.CATALOGUE_ID||'')}"><input type="hidden" name="defaultStore" value="${esc(x.MAGASIN_DEFAUT||x.MAGASIN_ACTUEL||'')}"><div class="full"><label>Produit</label><input name="product" required autofocus value="${esc(x.PRODUIT||'')}"></div><div><label>Statut</label><select name="status">${courseStatusOptions(x.STATUT)}</select></div><div><label>Rayon</label><select name="aisle">${optionList('aisles',x.RAYON||x.TYPOLOGIE)}</select></div><div><label>Magasin</label><select name="store">${optionList('stores',x.MAGASIN_ACTUEL||x.MAGASIN_DEFAUT)}</select></div><div><label>Quantité</label><input name="quantity" value="${esc(x.QUANTITE||'1')}"></div><div><label>Conditionnement</label><input name="package" value="${esc(x.CONDITIONNEMENT||'')}"></div><div class="full"><label>Commentaire</label><textarea name="note">${esc(x.COMMENTAIRE||'')}</textarea></div>`,saveCourseOptimistic)
+}
+function addManualCourse(v){saveCourseOptimistic(v)}
+function saveCourseOptimistic(v){
+ ensureData();
+ const id=v.id||('course-'+Date.now());
+ let item=(S.data.courses||[]).find(c=>String(c.ID)===String(id));
+ if(!item){item={ID:id,STATUT:'A_ACHETER',AJOUTE_LE:new Date().toISOString()};(S.data.courses??=[]).push(item)}
+ Object.assign(item,courseFromForm(v,item,id));
+ S.pendingCourseSaves=S.pendingCourseSaves||{};
+ S.pendingCourseSaves[id]={payload:courseSavePayload(v,id),item:structuredClone(item),token:Date.now()+'-'+Math.random().toString(16).slice(2)};
+ markLocalChange();writeClientCache();renderCourses();toast(v.id?'Produit modifié':'Ajouté aux courses');updateSyncStatus();scheduleCourseSaveFlush();
+}
+function courseFromForm(v,item,id){return {ID:id,CATALOGUE_ID:v.catalogueId||item.CATALOGUE_ID||'',PRODUIT:v.product,TYPOLOGIE:v.aisle||'Autres',MAGASIN_DEFAUT:v.defaultStore||v.store||'',MAGASIN_ACTUEL:v.store||'',RAYON:v.aisle||'',QUANTITE:v.quantity||'1',CONDITIONNEMENT:v.package||'',COMMENTAIRE:v.note||'',STATUT:v.status==='A_VERIFIER_STOCK'?'A_VERIFIER_STOCK':'A_ACHETER',MAJ:new Date().toISOString()}}
+function courseSavePayload(v,id){return {id:id,catalogueId:v.catalogueId||'',defaultStore:v.defaultStore||v.store||'',product:v.product,aisle:v.aisle||'',store:v.store||'',quantity:v.quantity||'1',package:v.package||'',note:v.note||'',status:v.status==='A_VERIFIER_STOCK'?'A_VERIFIER_STOCK':'A_ACHETER'}}
+function scheduleCourseSaveFlush(delay=500){clearTimeout(S.courseSaveTimer);S.courseSaveTimer=setTimeout(flushCourseSaves,delay)}
+function flushCourseSaves(){
+ if(S.courseSaveInFlight)return;
+ const entries=Object.entries(S.pendingCourseSaves||{});
+ if(!entries.length){writeClientCache();updateSyncStatus();return}
+ const previous=structuredClone(S.data.courses||[]);
+ S.courseSaveInFlight=true;writeClientCache();updateSyncStatus();
+ backgroundSync(()=>Promise.all(entries.map(([localId,entry])=>server('saveCourse',entry.payload).then(saved=>reconcileSavedCourse(localId,saved,entry.token)))),
+  ()=>{S.data.courses=previous;renderCourses()}
+ ).finally(()=>{S.courseSaveInFlight=false;if(Object.keys(S.pendingCourseSaves||{}).length)scheduleCourseSaveFlush(1200);else updateSyncStatus()})
+}
+function reconcileSavedCourse(localId,saved,token){
+ const data=ensureData();
+ const pending=S.pendingCourseSaves?.[localId];
+ if(pending&&pending.token!==token)return saved;
+ if(!saved||!saved.ID)throw new Error('Sauvegarde du produit non confirmée par le serveur');
+ if(S.pendingBoughtCourses&&S.pendingBoughtCourses[localId]){
+  S.pendingBoughtCourses[saved.ID]=Object.assign({},S.pendingBoughtCourses[localId],saved,{ID:saved.ID});
+  delete S.pendingBoughtCourses[localId];
+  if(S.pendingCourseSaves)delete S.pendingCourseSaves[localId];
+  data.courses=(data.courses||[]).filter(c=>String(c.ID)!==String(localId)&&String(c.ID)!==String(saved.ID));
+  scheduleBoughtFlush(250);
+  writeClientCache();
+  return saved;
+ }
+ let item=(data.courses||[]).find(c=>String(c.ID)===String(localId))||(data.courses||[]).find(c=>String(c.ID)===String(saved.ID));
+ if(!item){item=saved;data.courses.push(item)}
+ data.courses=data.courses.filter(c=>String(c.ID)===String(localId)||String(c.ID)!==String(saved.ID));
+ Object.assign(item,saved);
+ if(S.pendingCourseSaves)delete S.pendingCourseSaves[localId];
+ writeClientCache();
+ return saved;
+}
+function applyPendingCourseSavesLocally(){const data=ensureData();Object.entries(S.pendingCourseSaves||{}).forEach(([id,entry])=>{if(!entry||!entry.item)return;let item=(data.courses||[]).find(c=>String(c.ID)===String(id));if(item)Object.assign(item,entry.item);else data.courses.push(structuredClone(entry.item))})}
+function applyPendingBoughtCoursesLocally(){const data=ensureData();const boughtIds=new Set(Object.keys(S.pendingBoughtCourses||{}).map(String));if(!boughtIds.size)return;data.courses=(data.courses||[]).filter(c=>!boughtIds.has(String(c.ID)))}
+function saveCatalogOptimistic(v){
+ const previous=structuredClone({catalogue:S.data.catalogue,courses:S.data.courses,preparation:S.data.preparation});
+ let item=S.data.catalogue.find(c=>c.ID===v.id);
+ if(!item){item={ID:'local-cat-'+Date.now(),ACTIF:true,DERNIER_ACHAT:v.lastPurchased||''};S.data.catalogue.push(item)}
+ Object.assign(item,{PRODUIT:v.product,TYPOLOGIE:v.aisle||'Autres',MAGASIN_DEFAUT:v.defaultStore||'',QUANTITE_DEFAUT:v.defaultQuantity||'1',RAYON:v.aisle||'',CONDITIONNEMENT:v.package||'',ICONE:v.icon||defaultProductIcon(v.product,v.aisle),MAJ:new Date().toISOString()});
+ syncLocalCatalogueRows(item);
+ renderDataViews('catalogue','courses');toast(v.id?'Produit modifié':'Produit ajouté');
+ backgroundSync(()=>server('saveCatalogue',v).then(saved=>{Object.assign(item,saved);syncLocalCatalogueRows(item);return saved}),()=>{S.data.catalogue=previous.catalogue;S.data.courses=previous.courses;S.data.preparation=previous.preparation})
+}
+function syncLocalCatalogueRows(item){
+ S.data.courses.concat(S.data.preparation).forEach(x=>{
+  if(String(x.CATALOGUE_ID)!==String(item.ID))return;
+  Object.assign(x,{PRODUIT:item.PRODUIT,TYPOLOGIE:item.RAYON||item.TYPOLOGIE||'Autres',MAGASIN_DEFAUT:item.MAGASIN_DEFAUT,MAGASIN_ACTUEL:item.MAGASIN_DEFAUT,RAYON:item.RAYON,QUANTITE:item.QUANTITE_DEFAUT||x.QUANTITE||'1',CONDITIONNEMENT:item.CONDITIONNEMENT});
+ })
+}
+function deleteCatalogProduct(id){
+ const item=S.data.catalogue.find(x=>x.ID===id);if(!item)return;
+ if(!confirm(`Supprimer « ${item.PRODUIT} » du référentiel ? Il sera aussi retiré de la préparation en cours.`))return;
+ const previous=structuredClone({catalogue:S.data.catalogue,courses:S.data.courses,preparation:S.data.preparation});
+ S.data.catalogue=S.data.catalogue.filter(x=>x.ID!==id);
+ S.data.courses=S.data.courses.filter(x=>String(x.CATALOGUE_ID)!==String(id));
+ S.data.preparation=S.data.preparation.filter(x=>String(x.CATALOGUE_ID)!==String(id));
+ renderDataViews('catalogue','courses');toast('Produit supprimé');
+ backgroundSync(()=>server('deleteCatalogue',id),()=>{S.data.catalogue=previous.catalogue;S.data.courses=previous.courses;S.data.preparation=previous.preparation})
+}
+
+function openDishIdea(id=''){
+ const x=(S.data.ideesPlats||[]).find(i=>String(i.ID)===String(id))||{};
+ shell(id?'Modifier le plat à tester':'Nouveau plat à tester',`<input type="hidden" name="id" value="${esc(x.ID||'')}"><div class="full"><label>Plat</label><input name="dish" required autofocus value="${esc(x.PLAT||'')}"></div><div class="full"><label>URL recette</label><input name="url" inputmode="url" value="${esc(x.URL||'')}"></div><div><label>Évaluation</label><select name="rating">${ratingOptions(x.EVALUATION)}</select></div><div class="full"><label>Commentaire</label><textarea name="comment">${esc(x.COMMENTAIRE||'')}</textarea></div>`,saveDishIdeaOptimistic)
+}
+function saveDishIdeaOptimistic(v){
+ ensureData();
+ const previous=structuredClone(S.data.ideesPlats||[]);
+ let item=(S.data.ideesPlats||[]).find(i=>String(i.ID)===String(v.id));
+ if(!item){item={ID:'local-idea-'+Date.now(),STATUT:'A_TESTER'};(S.data.ideesPlats??=[]).push(item)}
+ Object.assign(item,{PLAT:v.dish,URL:v.url||'',COMMENTAIRE:v.comment||'',EVALUATION:v.rating||'',STATUT:item.STATUT==='PLANIFIE'?'PLANIFIE':'A_TESTER',MAJ:new Date().toISOString()});
+ queueRender(renderIdeas);toast(v.id?'Plat modifié':'Plat ajouté');
+ backgroundSync(()=>server('saveDishIdea',v).then(saved=>{if(!saved||!saved.ID)throw new Error('Sauvegarde du plat non confirmée par le serveur');Object.assign(item,saved);return saved}),()=>{S.data.ideesPlats=previous;renderIdeas()})
+}function deleteDishIdeaClient(id){
+ ensureData();
+ const item=(S.data.ideesPlats||[]).find(i=>String(i.ID)===String(id));if(!item)return;
+ if(!confirm(`Supprimer « ${item.PLAT} » de la liste des plats à tester ?`))return;
+ const previous=structuredClone(S.data.ideesPlats||[]);
+ S.data.ideesPlats=S.data.ideesPlats.filter(i=>String(i.ID)!==String(id));
+ queueRender(renderIdeas);toast('Plat supprimé');
+ backgroundSync(()=>server('deleteDishIdea',id),()=>{S.data.ideesPlats=previous;renderIdeas()})
+}
+function openPlanIdea(id){
+ const x=(S.data.ideesPlats||[]).find(i=>i.ID===id);if(!x)return;
+ shell(`Planifier · ${esc(x.PLAT)}`,`<input type="hidden" name="id" value="${esc(x.ID)}"><div><label>Date</label><input type="date" name="date" required value="${esc(S.selectedDate||S.data.today)}"></div><div><label>Repas</label><select name="meal"><option value="MIDI">Midi</option><option value="SOIR">Soir</option></select></div><div><label>Évaluation</label><select name="rating">${ratingOptions(x.EVALUATION)}</select></div><div class="full"><label>Commentaire menu</label><textarea name="comment">${esc(x.COMMENTAIRE||'')}</textarea></div>`,planIdeaOptimistic)
+}
+function planIdeaOptimistic(v){
+ const previous=structuredClone({ideas:S.data.ideesPlats,menus:S.data.menus});
+ const idea=S.data.ideesPlats.find(i=>i.ID===v.id);if(!idea)return;
+ const meal=v.meal==='MIDI'?'MIDI':'SOIR';
+ let menu=S.data.menus.find(m=>m.DATE===v.date&&m.REPAS===meal);
+ if(!menu){menu={ID:'local-menu-'+Date.now(),DATE:v.date,REPAS:meal};S.data.menus.push(menu)}
+ Object.assign(menu,{MENU:idea.PLAT,URL:idea.URL||'',COMMENTAIRE:v.comment||idea.COMMENTAIRE||'',EVALUATION:v.rating||idea.EVALUATION||'',CHOUCHOU:menu.CHOUCHOU||'À définir',LOULOU:menu.LOULOU||'À définir',STATUT:'PLANIFIE',MAJ:new Date().toISOString()});
+ Object.assign(idea,{STATUT:'PLANIFIE',DATE_PLANIFIEE:v.date,REPAS_PLANIFIE:meal,EVALUATION:v.rating||idea.EVALUATION||'',MAJ:new Date().toISOString()});
+ renderDataViews('ideas','menus');toast('Plat planifié');
+ backgroundSync(()=>server('planDishIdea',v).then(saved=>{Object.assign(idea,saved.idea);Object.assign(menu,saved.menu);return saved}),()=>{S.data.ideesPlats=previous.ideas;S.data.menus=previous.menus})
+}
+function saveReferenceOptimistic(v){
+ const previous=structuredClone(S.data.references);
+ const key=refKeyForType(v.type);
+ let item=(S.data.references[key]||[]).find(x=>x.ID===v.id);
+ if(!item){item={ID:'local-ref-'+Date.now(),TYPE:v.type,ACTIF:true};S.data.references[key].push(item)}
+ if(S.data.references.deleted?.[key])S.data.references.deleted[key]=S.data.references.deleted[key].filter(x=>String(x||'').toLowerCase()!==String(v.value||'').toLowerCase());
+ Object.assign(item,{VALEUR:v.value,ORDRE:Number(v.order)||S.data.references[key].length,MAJ:new Date().toISOString()});
+ S.data.references[key].sort((a,b)=>(Number(a.ORDRE)||9999)-(Number(b.ORDRE)||9999)||String(a.VALEUR).localeCompare(String(b.VALEUR)));
+ renderDataViews('admin','courses','catalogue');toast('Liste mise à jour');
+ backgroundSync(()=>server('saveReference',v).then(saved=>{Object.assign(item,saved);return saved}),()=>{S.data.references=previous})
+}
+
+function startReferenceDrag(e){const row=e.target.closest('[data-ref-id]');if(!row)return;row.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',row.dataset.refId)}
+function overReferenceDrag(e){const row=e.target.closest('[data-ref-id]');if(!row)return;e.preventDefault();const dragging=document.querySelector('.admin-list .dragging');if(!dragging||dragging===row)return;const box=row.getBoundingClientRect();const after=e.clientY>box.top+box.height/2;row.parentNode.insertBefore(dragging,after?row.nextSibling:row)}
+function dropReference(e){e.preventDefault();const list=e.target.closest('.admin-list');if(!list)return;if(list.dataset.storeAisles)saveStoreAisleOrderFromDom(list);else saveReferenceOrderFromDom(list)}
+function endReferenceDrag(e){const row=e.target.closest('[data-ref-id]');if(row)row.classList.remove('dragging')}
+function saveReferenceOrderFromDom(list){
+ const type=list.dataset.refType,key=refKeyForType(type);
+ const ids=[...list.querySelectorAll('[data-ref-id]')].map(x=>x.dataset.refId);
+ const previous=structuredClone(S.data.references);
+ const byId=new Map((S.data.references[key]||[]).map(x=>[String(x.ID),x]));
+ S.data.references[key]=ids.map((id,i)=>Object.assign(byId.get(String(id)),{ORDRE:i+1})).filter(Boolean);
+ toast('Ordre mis à jour');
+ backgroundSync(()=>server('saveReferencesOrder',type,ids),()=>{S.data.references=previous;renderAdmin()})
+}
+function saveStoreAisleOrderFromDom(list){
+ const store=list.dataset.store;
+ const entries=[...list.querySelectorAll('[data-aisle-value]')].map(x=>({aisle:x.dataset.aisleValue,visible:!!x.querySelector('input[type="checkbox"]')?.checked}));
+ const previous=structuredClone(S.data.references);
+ S.data.references.storeAisleOrders=S.data.references.storeAisleOrders||{};
+ S.data.references.hiddenStoreAisles=S.data.references.hiddenStoreAisles||{};
+ S.data.references.storeAisleOrders[store]=entries.filter(x=>x.visible).map((x,i)=>({STORE:store,AISLE:x.aisle,ORDRE:i+1}));
+ S.data.references.hiddenStoreAisles[store]=entries.filter(x=>!x.visible).map(x=>x.aisle);
+ toast('Configuration du magasin mise à jour');
+ renderAdmin();
+ backgroundSync(()=>server('saveStoreAisleOrder',store,entries),()=>{S.data.references=previous;renderAdmin();renderCourses()})
+}
+function openCatalogById(id){const x=S.data.catalogue.find(c=>c.ID===id);if(x)openCatalogItem(x)}
+function openCatalogItem(x={}){shell(x.ID?'Modifier le produit':'Nouveau produit de référence',`<input type="hidden" name="id" value="${esc(x.ID||'')}"><input type="hidden" name="lastPurchased" value="${esc(x.DERNIER_ACHAT||'')}"><div class="full"><label>Produit</label><input name="product" required autofocus value="${esc(x.PRODUIT||'')}"></div><div><label>Icône</label><input name="icon" maxlength="4" value="${esc(x.ICONE||defaultProductIcon(x.PRODUIT,x.RAYON||x.TYPOLOGIE))}"></div><div><label>Rayon</label><select name="aisle">${optionList('aisles',x.RAYON||x.TYPOLOGIE)}</select></div><div><label>Magasin par défaut</label><select name="defaultStore">${optionList('stores',x.MAGASIN_DEFAUT)}</select></div><div><label>Quantité par défaut</label><input name="defaultQuantity" value="${esc(x.QUANTITE_DEFAUT||'1')}"></div><div class="full"><label>Conditionnement</label><input name="package" value="${esc(x.CONDITIONNEMENT||'')}"></div>`,saveCatalogOptimistic)}
+
+function openHistory(){showTab('history')}
+function renderHistoryPage(){const box=$('#historyPageResults');if(!box)return;if(!$('#historySearchPage').dataset.bound){$('#historySearchPage').onkeydown=e=>{if(e.key==='Enter')loadHistoryPage()};$('#historySearchPage').dataset.bound='1'}}
+async function loadHistoryPage(){const q=$('#historySearchPage')?.value||'';const month=$('#historyMonth')?.value||'';const rating=$('#historyRating')?.value||'';const box=$('#historyPageResults');const key=JSON.stringify([q,month,rating]);try{if(box)box.textContent='Recherche…';S.historySearchCache=S.historySearchCache||{};let xs=S.historySearchCache[key];if(!xs){xs=await server('searchMenuHistory',q,300,month,rating);S.historySearchCache[key]=xs}if(!box)return;box.innerHTML=xs.length?renderHistoryByDate(xs):empty('🔎','Aucun ancien menu','Essayez un autre mot, mois ou niveau d’évaluation.')}catch(e){if(box)box.innerHTML=empty('⚠️','Historique indisponible',e.message||'Erreur de chargement');fail(e)}}
+async function loadHistory(){return loadHistoryPage()}
+function filterHistoryLocal(query,month,minRating,limit){const q=cleanText(query),m=String(month||''),rating=Number(minRating)||0,max=Math.min(Math.max(Number(limit)||80,1),300);return [...(S.historyCache||[])].filter(x=>{if(m&&String(x.DATE||'').slice(5,7)!==m)return false;if(rating&&Number(x.EVALUATION||0)<rating)return false;if(!q)return true;return cleanText([x.MENU,x.COMMENTAIRE,x.PERSONNES,x.DATE,x.REPAS].join(' ')).includes(q)}).sort((a,b)=>String(b.DATE).localeCompare(String(a.DATE))).slice(0,max)}
+function renderHistoryByDate(xs){const meals={MIDI:0,SOIR:1};const sorted=[...xs].sort((a,b)=>String(b.DATE).localeCompare(String(a.DATE))||((meals[a.REPAS]??9)-(meals[b.REPAS]??9)));const groups=groupBy(sorted,x=>x.DATE||'');return Object.entries(groups).map(([date,items])=>`<div class="group"><div class="group-title"><span>${date?frDate(date):'Sans date'}</span><span class="sub">${items.length}</span></div>${items.map(historyCard).join('')}</div>`).join('')}
+function renderUndoStrip(){const items=(S.recentBought||[]).slice(-3).reverse();if(!items.length)return'';return `<div class="undo-strip">${items.map(x=>`<div class="undo-row"><div><b>${esc(x.PRODUIT)}</b><div class="sub">Coché récemment</div></div><button class="secondary" onclick="undoBuy('${x.ID}')">Annuler</button></div>`).join('')}</div>`}
+function renderCourses(){
+ const data=ensureData();
+ if(!S.shoppingLoaded&&S.shoppingLoading&&!data.courses.length){$('#courseStats').innerHTML='';$('#courseList').innerHTML=empty('⏳','Chargement des courses','La liste active arrive…');return}
+ const q=$('#courseSearch').value.toLowerCase();let list=data.courses.filter(x=>(x.PRODUIT+' '+x.RAYON+' '+x.TYPOLOGIE+' '+x.MAGASIN_ACTUEL).toLowerCase().includes(q));
+ const key=S.group==='store'?'MAGASIN_ACTUEL':'RAYON';
+ const subKey=S.group==='store'?'RAYON':'MAGASIN_ACTUEL';
+ const keyRef=S.group==='store'?'stores':'aisles';
+ const subRef=S.group==='store'?'aisles':'stores';
+ list.sort((a,b)=>{
+  const main=refCompare(keyRef,a[key]||'Autres',b[key]||'Autres');
+  if(main)return main;
+  const sub=S.group==='store'?storeAisleCompare(a.MAGASIN_ACTUEL||'Autres',a.RAYON||'Autres',b.RAYON||'Autres'):refCompare(subRef,a[subKey]||'Autres',b[subKey]||'Autres');
+  return sub||String(a.PRODUIT||'').localeCompare(String(b.PRODUIT||''),'fr');
+ });
+ const groups=groupBy(list,x=>x[key]||'Autres');$('#courseStats').innerHTML=`<div class="stat"><b>${list.length}</b>articles</div><div class="stat"><b>${new Set(list.map(x=>x.MAGASIN_ACTUEL||'Autres')).size}</b>magasins</div><div class="stat"><b>${new Set(list.map(x=>x.RAYON||'Autres')).size}</b>rayons</div>`;
+ const groupEntries=Object.entries(groups).sort(([a],[b])=>refCompare(keyRef,a,b));
+ $('#courseList').innerHTML=renderUndoStrip()+(list.length?`<div class="view-tip">Touchez ✓ quand l’article est dans le panier. En cas d’erreur, utilisez Annuler dans “Derniers cochés”. Utilisez Modifier pour ajuster quantité, rayon, magasin ou commentaire.</div>`:'')+(list.length?groupEntries.map(([g,items])=>`<div class="group"><div class="group-title"><span>${esc(g)}</span><span class="sub">${items.length}</span></div>${items.map(courseCard).join('')}</div>`).join(''):empty('🧺','La liste est vide','Ajoutez des produits depuis le référentiel.'));
+}
+function courseCard(x){const check=x.STATUT==='A_VERIFIER_STOCK'?`<span class="badge status-check">À vérifier stock</span>`:'';return `<div class="card item course-card" data-id="${x.ID}"><button class="course-done touch-action" onclick="buy('${x.ID}',this)" aria-label="Acheté">✓</button><div class="card-main"><div class="card-topline"><div class="item-name">${esc(x.PRODUIT)}</div>${check}${x.QUANTITE?`<span class="badge">× ${esc(x.QUANTITE)}</span>`:''}</div><div class="course-meta"><span class="pill">${esc(x.RAYON||'Autres')}</span><span class="pill">${esc(x.MAGASIN_ACTUEL||'Autres')}</span></div><div class="chipline">${x.CONDITIONNEMENT?`<span class="pill">${esc(x.CONDITIONNEMENT)}</span>`:''}${x.COMMENTAIRE?`<span class="pill warn">${esc(x.COMMENTAIRE)}</span>`:''}</div></div><button class="secondary course-edit touch-action" onclick="openCourseById('${x.ID}')">Modifier</button></div>`}
+function openCourseById(id){const x=S.data.courses.find(c=>String(c.ID)===String(id));if(x)openCourse(x)}
+function catalogCard(x,prep,buy){
+ const status=buy?'À acheter':prep?.STATUT==='A_VERIFIER'?'À vérifier':prep?.STATUT==='IGNORE'?'Écarté':prep?.STATUT==='A_DECIDER'?'À décider':'Référentiel';
+ const statusClass=buy?'status-buy':prep?.STATUT==='A_VERIFIER'?'status-check':prep?.STATUT==='IGNORE'?'status-ignore':prep?.STATUT==='A_DECIDER'?'status-todo':'';
+ let decisions='';
+ if(buy)decisions=`<button class="danger" onclick="decidePreparation('${buy.ID}','IGNORE',this)">Écarter</button><button class="secondary" onclick="decidePreparation('${buy.ID}','A_VERIFIER',this)">Vérifier</button><button class="primary" onclick="decidePreparation('${buy.ID}','A_ACHETER',this)">Acheter</button><button class="secondary" onclick="openBuyDecision('${buy.ID}',this)">Commentaire</button>`;
+ else if(prep?.STATUT==='A_DECIDER')decisions=`<button class="danger" onclick="decidePreparation('${prep.ID}','IGNORE',this)">Écarter</button><button class="secondary" onclick="decidePreparation('${prep.ID}','A_VERIFIER',this)">Vérifier</button><button class="primary" onclick="decidePreparation('${prep.ID}','A_ACHETER',this)">Acheter</button><button class="secondary" onclick="openBuyDecision('${prep.ID}',this)">Commentaire</button>`;
+ else if(prep?.STATUT==='A_VERIFIER')decisions=`<button class="danger" onclick="decidePreparation('${prep.ID}','IGNORE',this)">Écarter</button><button class="secondary" onclick="decidePreparation('${prep.ID}','A_VERIFIER',this)">Vérifier</button><button class="primary" onclick="decidePreparation('${prep.ID}','A_ACHETER',this)">Acheter</button><button class="secondary" onclick="openBuyDecision('${prep.ID}',this)">Commentaire</button>`;
+ else if(prep?.STATUT==='IGNORE')decisions=`<button class="secondary" onclick="decidePreparation('${prep.ID}','A_DECIDER',this)">Réactiver</button>`;
+ else decisions=`<button class="primary" onclick="addCatalog('${x.ID}',this)">Ajouter</button>`;
+ const icon=x.ICONE||defaultProductIcon(x.PRODUIT,x.RAYON||x.TYPOLOGIE);
+ return `<div class="card catalog-row"><div class="product-title"><span class="product-icon">${esc(icon)}</span><div class="card-main"><div class="card-topline"><div class="item-name">${esc(x.PRODUIT)}</div><span class="badge ${statusClass}">${esc(status)}</span></div><div class="chipline">${x.RAYON?`<span class="pill">Rayon · ${esc(x.RAYON)}</span>`:''}${x.MAGASIN_DEFAUT?`<span class="pill">Magasin · ${esc(x.MAGASIN_DEFAUT)}</span>`:''}<span class="pill">Qté · ${esc(x.QUANTITE_DEFAUT||'1')}</span>${x.CONDITIONNEMENT?`<span class="pill">${esc(x.CONDITIONNEMENT)}</span>`:''}${x.DERNIER_ACHAT?`<span class="pill ok">Acheté ${frDate(x.DERNIER_ACHAT)}</span>`:''}</div></div></div><div class="catalog-actions compact-actions"><div class="decision-actions">${decisions}</div><div class="admin-actions"><button class="secondary" onclick="openCatalogById('${x.ID}')">Modifier</button><button class="danger" onclick="deleteCatalogProduct('${x.ID}')">Supprimer</button></div></div></div>`
+}
+
+function ideaCard(x){const link=x.URL?`<a class="secondary meal-link" href="${esc(x.URL)}" target="_blank" title="${esc(x.URL)}">${esc(urlPreview(x.URL))}</a>`:'';const planned=x.STATUT==='PLANIFIE'?`<span class="pill ok">Planifié${x.DATE_PLANIFIEE?` · ${frDate(x.DATE_PLANIFIEE)}`:''}${x.REPAS_PLANIFIE?` ${x.REPAS_PLANIFIE==='MIDI'?'midi':'soir'}`:''}</span>`:'';const rating=x.EVALUATION?`<span class="pill">${ratingStars(x.EVALUATION)}</span>`:'';return `<div class="card catalog-row"><div class="product-title"><span class="product-icon">💡</span><div class="card-main"><div class="card-topline"><div class="item-name">${esc(x.PLAT)}</div>${rating}</div><div class="chipline">${planned}</div>${x.COMMENTAIRE?`<div class="meta">${esc(x.COMMENTAIRE)}</div>`:''}${link}</div></div><div class="catalog-actions compact-actions"><button class="primary" onclick="openPlanIdea('${x.ID}')">Planifier</button><button class="secondary" onclick="openDishIdea('${x.ID}')">Modifier</button><button class="danger" onclick="deleteDishIdeaClient('${x.ID}')">Supprimer</button></div></div>`}
+function addHistoryToIdeasById(id){const all=Object.values(S.historySearchCache||{}).flat();const x=all.find(i=>String(i.ID)===String(id));if(!x)return;saveDishIdeaOptimistic({dish:x.MENU||'',url:x.URL||'',comment:x.COMMENTAIRE||''})}
+function historyCard(x){return `<div class="card"><div class="meal-top"><b>${esc(x.REPAS==='MIDI'?'Midi':x.REPAS==='SOIR'?'Soir':x.REPAS||'Repas')}</b><span>${x.EVALUATION?`<span class="badge">${ratingStars(x.EVALUATION)}</span>`:''}<span class="badge">${esc(x.PERSONNES?x.PERSONNES+' pers.':'')}</span></span></div><h2>${esc(x.MENU||'Menu sans titre')}</h2><div class="chipline">${x.CHOUCHOU?`<span class="pill">Chouchou · ${esc(x.CHOUCHOU)}</span>`:''}${x.LOULOU?`<span class="pill">Loulou · ${esc(x.LOULOU)}</span>`:''}${x.DEPLACEMENT?`<span class="pill">Déplacement · ${esc(x.DEPLACEMENT)}</span>`:''}</div>${x.COMMENTAIRE?`<div class="meta">${esc(x.COMMENTAIRE)}</div>`:''}<div class="history-actions">${x.URL?`<a class="secondary" href="${esc(x.URL)}" target="_blank">Recette</a>`:''}<button class="secondary" onclick="addHistoryToIdeasById('${esc(x.ID||'')}')">À tester</button></div></div>`}
+function openMenuById(id){const x=S.data.menus.find(m=>m.ID===id);if(x)openMenu(x)}
+function renderCatalog(){
+ if(!S.catalogLoaded&&S.catalogLoading&&!S.data.catalogue.length){$('#prepStats').innerHTML='';$('#catalogList').innerHTML=empty('⏳','Chargement du référentiel','Le référentiel se charge seulement maintenant…');return}
+ const q=$('#catalogSearch').value.toLowerCase();const prepMap=new Map(S.data.preparation.map(x=>[x.CATALOGUE_ID,x]));const buyMap=new Map(S.data.courses.filter(x=>x.CATALOGUE_ID).map(x=>[x.CATALOGUE_ID,x]));
+ const counts={todo:S.data.preparation.filter(x=>x.STATUT==='A_DECIDER').length,check:S.data.preparation.filter(x=>x.STATUT==='A_VERIFIER').length,buy:S.data.courses.length,ignored:S.data.preparation.filter(x=>x.STATUT==='IGNORE').length};
+ $('#prepStats').innerHTML=`<div class="stat"><b>${counts.todo}</b>à décider</div><div class="stat"><b>${counts.check}</b>à vérifier</div><div class="stat"><b>${counts.ignored}</b>écartés</div>`;
+ let xs=S.data.catalogue.filter(x=>(x.PRODUIT+' '+x.RAYON+' '+x.MAGASIN_DEFAUT).toLowerCase().includes(q));
+ if(S.prepFilter==='todo')xs=xs.filter(x=>prepMap.get(x.ID)?.STATUT==='A_DECIDER');
+ if(S.prepFilter==='check')xs=xs.filter(x=>prepMap.get(x.ID)?.STATUT==='A_VERIFIER');
+ if(S.prepFilter==='buy')xs=xs.filter(x=>buyMap.has(x.ID));
+ if(S.prepFilter==='ignored')xs=xs.filter(x=>prepMap.get(x.ID)?.STATUT==='IGNORE');
+ xs.sort((a,b)=>refCompare('aisles',a.RAYON||'Autres',b.RAYON||'Autres')||String(a.PRODUIT||'').localeCompare(String(b.PRODUIT||''),'fr'));const groups=groupBy(xs,x=>x.RAYON||'Autres');
+ const groupEntries=Object.entries(groups).sort(([a],[b])=>refCompare('aisles',a,b));
+ $('#catalogList').innerHTML=(xs.length?`<div class="view-tip">Préparez la semaine de gauche à droite : Écarter, Vérifier, Acheter. Modifier/Supprimer restent à droite.</div>`:'')+(xs.length?groupEntries.map(([g,items])=>`<div class="group"><div class="group-title">${esc(g)}</div>${items.map(x=>catalogCard(x,prepMap.get(x.ID),buyMap.get(x.ID))).join('')}</div>`).join(''):empty('🔎','Aucun produit dans ce filtre','Choisissez un autre état.'));
+}
+
+function showTab(tab){$$('nav button').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));$$('.panel').forEach(x=>x.classList.toggle('active',x.id===tab));S.tab=tab;$('#courseToolbar').style.display=S.tab==='courses'?'flex':'none';renderActive()}
+$$('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+$$('[data-group]').forEach(b=>b.onclick=()=>{$$('[data-group]').forEach(x=>x.classList.toggle('active',x===b));S.group=b.dataset.group;renderCourses()});
+$$('[data-prep-filter]').forEach(b=>b.onclick=()=>{S.prepFilter=b.dataset.prepFilter;syncPrepFilterButtons();renderCatalog()});
+$$('[data-leftover-filter]').forEach(b=>b.onclick=()=>{S.leftoverFilter=b.dataset.leftoverFilter;syncLeftoverFilterButtons();renderLeftovers()});
+$$('[data-admin-view]').forEach(b=>b.onclick=()=>{S.adminView=b.dataset.adminView;syncAdminTabs();renderAdmin()});
+$('#fab').onclick=openAdd;$('#courseSearch').oninput=renderCourses;$('#catalogSearch').oninput=renderCatalog;$('#ideaSearch').oninput=renderIdeas;
+function saturdayFor(iso){const d=new Date(iso+'T12:00:00');const diff=(d.getDay()-6+7)%7;return dateIso(new Date(d.setDate(d.getDate()-diff)))}
+function addDays(iso,n){const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);return dateIso(d)}function dateIso(d){return d.toISOString().slice(0,10)}
+function dateRange(start,n){return Array.from({length:n},(_,i)=>addDays(start,i))}function weekday(d){return new Intl.DateTimeFormat('fr-FR',{weekday:'short'}).format(new Date(d+'T12:00:00'))}function dayMonth(d){return new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short'}).format(new Date(d+'T12:00:00'))}function frDate(d){return new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00'))}
+function groupBy(xs,fn){return xs.reduce((a,x)=>((a[fn(x)]??=[]).push(x),a),{})}function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function urlPreview(value){const raw=String(value||'').trim();if(!raw)return'';try{const u=new URL(/^https?:\/\//i.test(raw)?raw:'https://'+raw);const host=u.hostname.replace(/^www\./,'');const path=u.pathname.replace(/^\/+/,'').split('/').filter(Boolean).slice(0,1).join('/');return (host+(path?'/'+path:'')).slice(0,34)}catch(e){return raw.replace(/^https?:\/\//i,'').replace(/^www\./,'').slice(0,34)}}
+function searchKey(v){return String(v??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()}
+function ratingStars(value){const n=Math.max(0,Math.min(5,Number(value)||0));return n?`<span class="stars">${'&#9733;'.repeat(n)}</span>`:''}
+function starText(value){const n=Math.max(0,Math.min(5,Number(value)||0));return '★★★★★'.slice(0,n)}
+function ratingOptions(current=''){return `<option value="">Non noté</option>${[1,2,3,4,5].map(n=>`<option value="${n}" ${Number(current)===n?'selected':''}>${starText(n)}</option>`).join('')}`}
+function cleanText(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function defaultProductIcon(product,aisle){const text=cleanText([product,aisle].join(' '));if(/pomme|poire|banane|orange|citron|fruit|fraise|raisin|kiwi|melon|peche|abricot/.test(text))return'🍎';if(/legume|salade|tomate|carotte|courgette|poireau|oignon|ail|pomme de terre|patate/.test(text))return'🥕';if(/lait|yaourt|fromage|creme|beurre|oeuf|œuf|cremerie/.test(text))return'🥛';if(/viande|poulet|boeuf|bœuf|porc|jambon|poisson|saumon|thon|crevette/.test(text))return'🥩';if(/riz|pate|pates|farine|sucre|huile|conserve|epicerie|cereal/.test(text))return'🛒';if(/surgel|glace|congele/.test(text))return'❄️';if(/chat|chien|animal|litiere|croquette/.test(text))return'🐾';if(/lessive|nettoy|eponge|entretien|sac poubelle|papier toilette/.test(text))return'🧽';if(/savon|shampo|dentifrice|hygiene|deodorant/.test(text))return'🧴';if(/pain|brioche|boulanger/.test(text))return'🥖';if(/boisson|eau|jus|soda|vin|biere/.test(text))return'🥤';return'🛒'}
+function debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}}
+function homeDataSnapshot(){const d=ensureData();return {revision:d.revision,today:d.today,settings:d.settings||{weekStart:6},menus:d.menus||[],restes:d.restes||[]}}
+function readHomeCache(){try{const raw=localStorage.getItem('coursesMenusHomeCacheV1');if(!raw)return null;const parsed=JSON.parse(raw);if(parsed&&parsed.__homeCache){S.pendingMenuStates=parsed.pendingMenuStates||{};return parsed.data||null}return parsed}catch(e){return null}}
+function writeHomeCache(){clearTimeout(S.homeCacheWriteTimer);S.homeCacheWriteTimer=setTimeout(()=>{try{localStorage.setItem('coursesMenusHomeCacheV1',JSON.stringify({__homeCache:1,data:homeDataSnapshot(),pendingMenuStates:S.pendingMenuStates||{}}))}catch(e){}},20)}
+function readClientCache(){try{const raw=localStorage.getItem('coursesMenusCacheV1');if(!raw)return null;const parsed=JSON.parse(raw);if(parsed&&parsed.__appCache){S.pendingPrepDecisions=parsed.pendingPrepDecisions||{};S.pendingStoreMoves=parsed.pendingStoreMoves||{};S.pendingBoughtCourses=parsed.pendingBoughtCourses||{};S.pendingCourseSaves=parsed.pendingCourseSaves||{};S.pendingMenuStates=Object.assign({},S.pendingMenuStates||{},parsed.pendingMenuStates||{});return parsed.data||null}return parsed}catch(e){return null}}
+function writeClientCache(){writeHomeCache();clearTimeout(S.cacheWriteTimer);S.cacheWriteTimer=setTimeout(()=>{try{localStorage.setItem('coursesMenusCacheV1',JSON.stringify({__appCache:3,data:ensureData(),pendingPrepDecisions:S.pendingPrepDecisions||{},pendingStoreMoves:S.pendingStoreMoves||{},pendingBoughtCourses:S.pendingBoughtCourses||{},pendingCourseSaves:S.pendingCourseSaves||{},pendingMenuStates:S.pendingMenuStates||{}}))}catch(e){}},45)}
+function renderDataViews(...views){queueRender(()=>{if(views.includes(S.tab))renderActive()})}
+function mergeLightData(current,light){const base=current||{};return normalizeData(Object.assign({},base,light,{catalogue:(light.catalogue&&light.catalogue.length)?light.catalogue:(base.catalogue||[]),courses:(light.courses&&light.courses.length)?light.courses:(base.courses||[]),preparation:(light.preparation&&light.preparation.length)?light.preparation:(base.preparation||[])}))}
+function applyPendingPrepDecisionsLocally(){const pending=S.pendingPrepDecisions||{};Object.entries(pending).forEach(([pendingId,value])=>{const status=typeof value==='string'?value:value.status,note=typeof value==='string'?'':value.note||'',catalogueId=typeof value==='string'?'':value.catalogueId||'';let record=[...(S.data.preparation||[]),...(S.data.courses||[])].find(x=>String(x.ID)===String(pendingId));if(!record&&catalogueId)record=[...(S.data.preparation||[]),...(S.data.courses||[])].find(x=>String(x.CATALOGUE_ID)===String(catalogueId));if(!record)return;S.data.courses=S.data.courses.filter(x=>String(x.ID)!==String(record.ID));S.data.preparation=S.data.preparation.filter(x=>String(x.ID)!==String(record.ID));record.STATUT=status;if(status==='A_ACHETER')record.COMMENTAIRE=note||'';if(status==='A_ACHETER')S.data.courses.push(record);else S.data.preparation.push(record);if(String(pendingId)!==String(record.ID)){pending[record.ID]=Object.assign({},value,{catalogueId:record.CATALOGUE_ID||catalogueId});delete pending[pendingId]}});S.pendingPrepDecisions=pending}
+function resumePendingSyncs(){if(Object.keys(S.pendingPrepDecisions||{}).length)schedulePrepDecisionFlush(900);if(Object.keys(S.pendingStoreMoves||{}).length)scheduleStoreFlush();if(Object.keys(S.pendingBoughtCourses||{}).length)scheduleBoughtFlush();if(Object.keys(S.pendingCourseSaves||{}).length)scheduleCourseSaveFlush(900);if(Object.keys(S.pendingMenuStates||{}).length)scheduleMenuStateFlush(900)}
+async function loadShoppingData(force=false){const current=ensureData();if(S.shoppingLoading||S.shoppingLoaded&&!force)return;S.shoppingLoading=true;if(S.tab==='courses'&&!current.courses.length)$('#courseList').innerHTML=empty('⏳','Chargement des courses','La liste active arrive…');try{const data=await server('getShoppingData');S.data=ensureData();S.data.courses=data.courses||[];S.data.preparation=data.preparation||[];if(data.references)S.data.references=data.references;S.data.revision=data.revision||S.data.revision;normalizeData(S.data);applyPendingPrepDecisionsLocally();applyPendingCourseSavesLocally();applyPendingBoughtCoursesLocally();applyPendingMenuStatesLocally();S.shoppingLoaded=true;writeClientCache();resumePendingSyncs();if(S.tab==='courses'&&!pendingLocalCount())renderCourses();if(S.tab==='catalogue')renderCatalog()}catch(e){fail(e)}finally{S.shoppingLoading=false}}
+async function loadCatalogData(force=false){const current=ensureData();if(S.catalogLoading||S.catalogLoaded&&!force)return;S.catalogLoading=true;if(S.tab==='catalogue'&&!current.catalogue.length)$('#catalogList').innerHTML=empty('⏳','Chargement du référentiel','Le référentiel se charge seulement maintenant…');try{const data=await server('getCatalogData');S.data=ensureData();S.data.catalogue=data.catalogue||[];S.data.courses=data.courses||[];S.data.preparation=data.preparation||[];S.data.references=data.references||S.data.references;S.data.revision=data.revision||S.data.revision;S.catalogLoaded=true;S.shoppingLoaded=true;normalizeData(S.data);applyPendingPrepDecisionsLocally();applyPendingCourseSavesLocally();applyPendingBoughtCoursesLocally();applyPendingMenuStatesLocally();writeClientCache();resumePendingSyncs();if(S.tab==='catalogue')renderCatalog();if(S.tab==='courses'&&!pendingLocalCount())renderCourses()}catch(e){fail(e)}finally{S.catalogLoading=false}}
+function refreshCoursesManual(){setSyncStatus('⏳ Actualisation courses','pending',true);loadShoppingData(true).then(()=>updateSyncStatus())}
+function refreshCatalogManual(){setSyncStatus('⏳ Actualisation du référentiel','pending',true);loadCatalogData(true).then(()=>updateSyncStatus())}
+
+function deriveRefs(type,values){return [...new Set(values.filter(Boolean))].sort().map((v,i)=>({ID:'derived-'+type+'-'+i,TYPE:type,VALEUR:v,ACTIF:true,ORDRE:i+1}))}
+function refValues(key,current=''){const refs=[...(S.data.references?.[key]||[])].filter(x=>x&&x.VALEUR&&!isDeletedRefValue(key,x.VALEUR));const xs=refs.map(x=>x.VALEUR);if(current&&!xs.includes(current)&&!isDeletedRefValue(key,current))xs.push(current);return [...new Set(xs)]}
+function isDeletedRefValue(key,value){const raw=String(value||'').toLowerCase();return ((S.data.references?.deleted?.[key])||[]).some(x=>String(x||'').toLowerCase()===raw)}
+function refRank(key,value){const v=String(value||'');const refs=S.data.references?.[key]||[];const i=refs.findIndex(x=>String(x.VALEUR||'')===v);return i>=0?(Number(refs[i].ORDRE)||i+1):9999}
+function refCompare(key,a,b){return (refRank(key,a)-refRank(key,b))||String(a||'Autres').localeCompare(String(b||'Autres'),'fr')}
+function storeAisleRank(store,aisle){const s=String(store||''),a=String(aisle||'');const rows=S.data.references?.storeAisleOrders?.[s]||[];const i=rows.findIndex(x=>String(x.AISLE||'')===a);return i>=0?(Number(rows[i].ORDRE)||i+1):refRank('aisles',a)}
+function storeAisleCompare(store,a,b){return (storeAisleRank(store,a)-storeAisleRank(store,b))||String(a||'Autres').localeCompare(String(b||'Autres'),'fr')}
+function optionList(key,current=''){const values=refValues(key,current);return `<option value=""></option>${values.map(v=>`<option value="${esc(v)}" ${v===current?'selected':''}>${esc(v)}</option>`).join('')}`}
+function empty(icon,title,text){return `<div class="empty"><div class="emoji">${icon}</div><h2>${title}</h2><p>${text}</p></div>`}function toast(t){const x=$('#toast');x.textContent=t;x.style.display='block';setTimeout(()=>x.style.display='none',1800)}function fail(e){console.error(e);toast(e.message||'Une erreur est survenue');setSyncStatus('Erreur','error')}
+function refKeyForType(type){return type==='RAYON'?'aisles':type==='LIEU_ENFANT'?'childLocations':type==='RESTE_CATEGORIE'?'leftoverCategories':'stores'}
+function renderAdmin(){
+ const stores=(S.data.references?.stores||[]),aisles=(S.data.references?.aisles||[]),child=(S.data.references?.childLocations||[]),leftCats=(S.data.references?.leftoverCategories||[]);
+ syncAdminTabs();
+ const views={
+  stores:()=>adminBlock('MAGASIN','Magasins',stores),
+  aisles:()=>adminBlock('RAYON','Rayons',aisles),
+  storeAisles:()=>storeAisleAdminBlock(stores,aisles),
+  family:()=>adminBlock('LIEU_ENFANT','Chouchou / Loulou',child),
+  leftovers:()=>adminBlock('RESTE_CATEGORIE','Catégories de restes',leftCats)
+ };
+ $('#adminList').innerHTML=(views[S.adminView]||views.stores)();
+ updateFab();
+}
+function syncAdminTabs(){$$('#adminTabs [data-admin-view]').forEach(x=>x.classList.toggle('active',x.dataset.adminView===S.adminView))}
+function openAdminAdd(){
+ const type={stores:'MAGASIN',aisles:'RAYON',family:'LIEU_ENFANT',leftovers:'RESTE_CATEGORIE'}[S.adminView];
+ if(type)openReference(type);else toast('Réorganisez les rayons par glisser-déposer');
+}
+function openReference(type,id=''){const key=refKeyForType(type),list=S.data.references?.[key]||[];const x=list.find(r=>r.ID===id)||{TYPE:type,VALEUR:'',ORDRE:list.length+1};const title=type==='RAYON'?'un rayon':type==='LIEU_ENFANT'?'un lieu enfant':type==='RESTE_CATEGORIE'?'une catégorie de reste':'un magasin';shell((id?'Modifier ':'Ajouter ')+title,`<input type="hidden" name="id" value="${esc(x.ID||'')}"><input type="hidden" name="type" value="${type}"><input type="hidden" name="order" value="${esc(x.ORDRE||list.length+1)}"><div class="full"><label>Valeur</label><input name="value" required autofocus value="${esc(x.VALEUR||'')}"></div>`,saveReferenceOptimistic)}
+
+function courseStatusValue(v){return v==='A_VERIFIER_STOCK'?'A_VERIFIER_STOCK':'A_ACHETER'}
+function courseStatusOptions(current){const c=courseStatusValue(current);return [['A_ACHETER','À acheter'],['A_VERIFIER_STOCK','À vérifier stock']].map(([v,t])=>`<option value="${v}" ${c===v?'selected':''}>${t}</option>`).join('')}
+function menuStateValue(v){return ['A_FAIRE','EN_COURS','OK'].includes(v)?v:'A_FAIRE'}
+function menuStateClass(v){return menuStateValue(v)==='OK'?'ok':menuStateValue(v)==='EN_COURS'?'doing':'todo'}
+function menuStateLabel(v){return menuStateValue(v)==='OK'?'OK - menu fait et courses \u00e0 jour':menuStateValue(v)==='EN_COURS'?'En cours - menu fait, courses \u00e0 mettre \u00e0 jour':'\u00c0 faire'}
+function menuStateOptions(current){const c=menuStateValue(current);return [['A_FAIRE','\u00c0 faire'],['EN_COURS','En cours'],['OK','OK']].map(([v,t])=>`<option value="${v}" ${c===v?'selected':''}>${t}</option>`).join('')}
+function nextMenuState(v){return menuStateValue(v)==='A_FAIRE'?'EN_COURS':menuStateValue(v)==='EN_COURS'?'OK':'A_FAIRE'}
+function menuCellSelector(date,meal){return `[data-menu-cell="${date}|${meal}"]`}
+function renderMenuCell(date,meal){const cell=document.querySelector(menuCellSelector(date,meal));if(!cell){renderMenus();return}cell.outerHTML=menuWeekCard(date,meal)}
+function renderMenuCellsForChange(oldDate,oldMeal,newDate,newMeal){if(oldDate&&oldMeal&&`${oldDate}|${oldMeal}`!==`${newDate}|${newMeal}`)renderMenuCell(oldDate,oldMeal);renderMenuCell(newDate,newMeal)}
+function applyPendingMenuStatesLocally(){const pending=S.pendingMenuStates||{};(S.data?.menus||[]).forEach(m=>{const p=pending[m.ID];if(p){m.ETAT_MENU=menuStateValue(p.state);m._PENDING_STATE=true}})}
+function toggleMenuState(id,ev){if(ev)ev.stopPropagation();const item=S.data.menus.find(m=>String(m.ID)===String(id));if(!item)return;item.ETAT_MENU=nextMenuState(item.ETAT_MENU);item._PENDING_STATE=true;S.pendingMenuStates=S.pendingMenuStates||{};S.pendingMenuStates[id]={state:item.ETAT_MENU,token:Date.now()+'-'+Math.random().toString(16).slice(2)};markLocalChange();renderMenuCell(item.DATE,item.REPAS);toast(menuStateLabel(item.ETAT_MENU));writeClientCache();updateSyncStatus();scheduleMenuStateFlush()}
+function scheduleMenuStateFlush(delay=450){clearTimeout(S.menuStateTimer);S.menuStateTimer=setTimeout(flushMenuStates,delay)}
+function flushMenuStates(){if(S.menuStateInFlight)return;const entries=Object.entries(S.pendingMenuStates||{}).filter(([id])=>!String(id).startsWith('local-'));if(!entries.length){writeClientCache();updateSyncStatus();return}S.menuStateInFlight=true;writeClientCache();backgroundSync(()=>Promise.all(entries.map(([id,entry])=>server('updateMenuState',id,entry.state).then(saved=>{const current=S.pendingMenuStates?.[id];if(current&&current.token!==entry.token)return saved;const item=S.data.menus.find(m=>String(m.ID)===String(id));if(item){Object.assign(item,saved);item.ETAT_MENU=menuStateValue(saved.ETAT_MENU);delete item._PENDING_STATE;if(S.tab==='menus')renderMenuCell(item.DATE,item.REPAS)}if(S.pendingMenuStates)delete S.pendingMenuStates[id];writeClientCache();return saved}))),()=>{}).finally(()=>{S.menuStateInFlight=false;if(Object.keys(S.pendingMenuStates||{}).length)scheduleMenuStateFlush(1200);else updateSyncStatus()})}
+function menuWeekCard(date,meal){const x=S.data.menus.find(m=>m.DATE===date&&m.REPAS===meal);const planned=S.data.restes.filter(r=>r.DATE_UTILISATION===date&&r.REPAS===meal);const cellKey=`${date}|${meal}`;const leftoverText=planned.length?planned.slice(0,2).map(r=>r.NOM).filter(Boolean).join(', ')+(planned.length>2?` +${planned.length-2}`:''):'';const leftoverLine=leftoverText?`<div class="menu-leftovers" title="${esc(planned.map(r=>r.NOM).filter(Boolean).join(', '))}">Restes · ${esc(leftoverText)}</div>`:'';if(!x)return `<button data-menu-cell="${cellKey}" class="card meal week-meal meal-empty ${meal==='SOIR'?'soir':''}" style="width:100%;text-align:left" onclick="openMenu({date:'${date}',meal:'${meal}'})"><div class="meal-top"><span class="sub">\u00c0 d\u00e9finir</span><span class="badge">+</span></div>${leftoverLine}</button>`;const state=`<button class="menu-state ${menuStateClass(x.ETAT_MENU)}" title="${esc(menuStateLabel(x.ETAT_MENU))}" aria-label="${esc(menuStateLabel(x.ETAT_MENU))}" onclick="toggleMenuState('${x.ID}',event)"></button>`;const recipe=x.URL?`<a class="pill" href="${esc(x.URL)}" target="_blank" onclick="event.stopPropagation()">Recette</a>`:'';const rating=x.EVALUATION?`<span class="pill">${ratingStars(x.EVALUATION)}</span>`:'';const children=[x.CHOUCHOU&&x.CHOUCHOU!=='\u00c0 d\u00e9finir'?'C - '+x.CHOUCHOU:'',x.LOULOU&&x.LOULOU!=='\u00c0 d\u00e9finir'?'L - '+x.LOULOU:''].filter(Boolean).map(v=>`<span class="pill">${esc(v)}</span>`).join('');return `<div data-menu-cell="${cellKey}" class="card meal week-meal ${meal==='SOIR'?'soir':''}" onclick="openMenuById('${x.ID}')"><div class="meal-top">${state}<span class="badge">${esc(x.PERSONNES||'')} pers.</span></div><h2>${esc(x.MENU||'\u00c0 d\u00e9finir')}</h2>${x.COMMENTAIRE?`<div class="meta">${esc(x.COMMENTAIRE)}</div>`:''}${leftoverLine}<div class="week-compact-pills">${rating}${recipe}${children}</div></div>`}
+function renderMenus(){const dates=dateRange(addDays(S.start,-S.before),S.before+S.after+1);if(!dates.includes(S.selectedDate))S.selectedDate=dates[0];$('#days').innerHTML='';$('#menuList').innerHTML=`<div class="week-table"><div class="week-head">Date</div><div class="week-head">Midi</div><div class="week-head">Soir</div>${dates.map(d=>`<div class="week-date"><span>${weekday(d)}</span><span>${dayMonth(d)}</span><span class="sub">${d.slice(8,10)}/${d.slice(5,7)}</span></div>${menuWeekCard(d,'MIDI')}${menuWeekCard(d,'SOIR')}`).join('')}</div>`}
+function leftoverCategoryValues(){return refValues('leftoverCategories').length?refValues('leftoverCategories'):['Plats préparés','Fruits','Légumes','Crèmerie','Viande & Co','Surgelés','Epicerie']}
+
+function removeReference(id){const key=['aisles','stores','childLocations','leftoverCategories'].find(k=>(S.data.references?.[k]||[]).some(x=>x.ID===id));const item=key&&(S.data.references[key]||[]).find(x=>x.ID===id);if(!item)return;if(!confirm(`Supprimer « ${item.VALEUR} » de la liste ? Les éléments existants gardent leur valeur.`))return;const previous=structuredClone(S.data.references);const value=String(item.VALEUR||'').toLowerCase();const type=item.TYPE||(key==='aisles'?'RAYON':key==='childLocations'?'LIEU_ENFANT':key==='leftoverCategories'?'RESTE_CATEGORIE':'MAGASIN');S.data.references.deleted=S.data.references.deleted||{};S.data.references.deleted[key]=[...(S.data.references.deleted[key]||[]),item.VALEUR].filter(Boolean);S.data.references[key]=S.data.references[key].filter(x=>String(x.ID)!==String(id)&&String(x.VALEUR||'').toLowerCase()!==value);if(key==='stores'){if(S.data.references.storeAisleOrders)delete S.data.references.storeAisleOrders[item.VALEUR];if(S.data.references.hiddenStoreAisles)delete S.data.references.hiddenStoreAisles[item.VALEUR]}if(key==='aisles'){if(S.data.references.storeAisleOrders)Object.keys(S.data.references.storeAisleOrders).forEach(store=>{S.data.references.storeAisleOrders[store]=(S.data.references.storeAisleOrders[store]||[]).filter(x=>String(x.AISLE||'').toLowerCase()!==value)});if(S.data.references.hiddenStoreAisles)Object.keys(S.data.references.hiddenStoreAisles).forEach(store=>{S.data.references.hiddenStoreAisles[store]=(S.data.references.hiddenStoreAisles[store]||[]).filter(x=>String(x||'').toLowerCase()!==value)})}renderDataViews('admin','courses','catalogue','menus','restes');toast('Valeur supprimée');backgroundSync(()=>server('deleteReference',id,type,item.VALEUR),()=>{S.data.references=previous;renderDataViews('admin','courses','catalogue','menus','restes')})}
+function normalizeReferenceLists(refs){refs.deleted=refs.deleted||{};const deleted=(k,v)=>(refs.deleted[k]||[]).some(x=>String(x||'').toLowerCase()===String(v||'').toLowerCase());['stores','aisles','childLocations','leftoverCategories'].forEach(k=>{refs.deleted[k]=refs.deleted[k]||[];refs[k]=(refs[k]||[]).filter(x=>x&&x.VALEUR&&!deleted(k,x.VALEUR)).sort((a,b)=>(Number(a.ORDRE)||9999)-(Number(b.ORDRE)||9999)||String(a.VALEUR||'').localeCompare(String(b.VALEUR||''),'fr'))});refs.storeAisleOrders=refs.storeAisleOrders||{};refs.hiddenStoreAisles=refs.hiddenStoreAisles||{};Object.keys(refs.storeAisleOrders).forEach(store=>{if(deleted('stores',store)){delete refs.storeAisleOrders[store];return}refs.storeAisleOrders[store]=(refs.storeAisleOrders[store]||[]).filter(x=>x&&!deleted('aisles',x.AISLE)).sort((a,b)=>(Number(a.ORDRE)||9999)-(Number(b.ORDRE)||9999)||String(a.AISLE||'').localeCompare(String(b.AISLE||''),'fr'))});Object.keys(refs.hiddenStoreAisles).forEach(store=>{if(deleted('stores',store)){delete refs.hiddenStoreAisles[store];return}refs.hiddenStoreAisles[store]=(refs.hiddenStoreAisles[store]||[]).filter(x=>x&&!deleted('aisles',x))})}
+function normalizeData(data){data.preparation=data.preparation||[];data.courses=data.courses||[];data.catalogue=data.catalogue||[];data.catalogue.forEach(x=>{x.ICONE=x.ICONE||defaultProductIcon(x.PRODUIT,x.RAYON||x.TYPOLOGIE)});data.menus=data.menus||[];data.menus.forEach(x=>{x.EVALUATION=x.EVALUATION?String(x.EVALUATION):'';x.ETAT_MENU=menuStateValue(x.ETAT_MENU);x.CHOUCHOU=x.CHOUCHOU||'À définir';x.LOULOU=x.LOULOU||'À définir'});data.restes=data.restes||[];data.restes.forEach(x=>{x.URGENCE=x.URGENCE==='URGENT'?'URGENT':'NON_URGENT'});data.ideesPlats=data.ideesPlats||[];data.ideesPlats.forEach(x=>{x.EVALUATION=x.EVALUATION?String(x.EVALUATION):''});data.legumesSaison=data.legumesSaison||[];data.references=data.references||{};data.references.deleted=data.references.deleted||{};data.references.stores=data.references.stores||deriveRefs('MAGASIN',data.catalogue.map(x=>x.MAGASIN_DEFAUT));data.references.aisles=data.references.aisles||deriveRefs('RAYON',data.catalogue.map(x=>x.RAYON));data.references.childLocations=data.references.childLocations||deriveRefs('LIEU_ENFANT',['À définir','Maison','Extérieur']);data.references.leftoverCategories=data.references.leftoverCategories||deriveRefs('RESTE_CATEGORIE',['Plats préparés','Fruits','Légumes','Crèmerie','Viande & Co','Surgelés','Epicerie']);data.references.storeAisleOrders=data.references.storeAisleOrders||{};data.references.hiddenStoreAisles=data.references.hiddenStoreAisles||{};normalizeReferenceLists(data.references);return data}
+
+function leftoverCard(x){const hasAny=x.DATE_UTILISATION||x.REPAS;const complete=x.DATE_UTILISATION&&x.REPAS;const state=complete?'assigned':hasAny?'partial':'none';const status=complete?`Affecté · ${frDate(x.DATE_UTILISATION)} ${x.REPAS==='MIDI'?'midi':'soir'}`:hasAny?'À compléter':'Non affecté';const urgent=x.URGENCE==='URGENT';return `<div class="card urg-${urgent?'URGENT':'NON_URGENT'} leftover-${state}"><div class="leftover-head"><div class="card-main"><label style="display:flex;align-items:center;gap:7px;margin-bottom:6px"><input type="checkbox" style="width:auto" ${S.keepLeftovers[x.ID]?'checked':''} onchange="toggleKeepLeftover('${x.ID}',this.checked)"> Conserver</label><div class="card-topline"><div class="item-name">${esc(x.NOM)}</div><span class="pill ${urgent?'hot':'warn'}">${urgent?'Urgent':'Non urgent'}</span></div><div class="chipline"><span class="pill">${esc(x.CATEGORIE||'')}</span>${x.QUANTITE?`<span class="pill">${esc(x.QUANTITE+' '+(x.UNITE||''))}</span>`:''}${x.DATE_LIMITE?`<span class="pill warn">Péremption ${frDate(x.DATE_LIMITE)}</span>`:''}</div>${x.COMMENTAIRE?`<div class="meta">${esc(x.COMMENTAIRE)}</div>`:''}</div><span class="assignment-status assignment-${state}">${esc(status)}</span></div><div class="leftover-plan"><div class="leftover-date"><label>Date d’utilisation</label><input type="date" value="${esc(x.DATE_UTILISATION||'')}" onchange="updateLeftoverPlan('${x.ID}','date',this.value)"></div><div class="leftover-meal"><label>Repas</label><select onchange="updateLeftoverPlan('${x.ID}','meal',this.value)"><option value="" ${!x.REPAS?'selected':''}>Non défini</option><option value="MIDI" ${x.REPAS==='MIDI'?'selected':''}>Midi</option><option value="SOIR" ${x.REPAS==='SOIR'?'selected':''}>Soir</option></select></div>${hasAny?`<button class="danger" onclick="clearLeftoverPlan('${x.ID}')">Désaffecter</button>`:'<span></span>'}</div><div class="actions" style="margin-top:10px"><button class="secondary" onclick="openLeftover('${x.ID}')">Modifier</button><button class="danger" onclick="deleteLeftoverClient('${x.ID}')">Supprimer</button></div></div>`}
+function menuIdeaPicker(){const items=(S.data.ideesPlats||[]).filter(x=>x.STATUT!=='SUPPRIME').sort((a,b)=>String(a.PLAT||'').localeCompare(String(b.PLAT||''),'fr'));if(!items.length)return'';return `<div class="full"><label>Reprendre un plat à tester</label><select onchange="applyIdeaToMenu(this.value)"><option value="">Choisir un plat…</option>${items.map(x=>`<option value="${esc(x.ID)}">${esc(x.PLAT||'Sans titre')}${x.EVALUATION?' · '+starText(Number(x.EVALUATION)||0):''}</option>`).join('')}</select><div class="sub">Remplit le menu, la recette, le commentaire et l’évaluation si renseignés.</div></div>`}
+function applyIdeaToMenu(id){const x=(S.data.ideesPlats||[]).find(i=>String(i.ID)===String(id));if(!x)return;const f=$('#form');if(!f)return;if(f.menu)f.menu.value=x.PLAT||'';if(f.url&&x.URL)f.url.value=x.URL;if(f.comment&&x.COMMENTAIRE)f.comment.value=x.COMMENTAIRE;if(f.rating&&x.EVALUATION)f.rating.value=String(x.EVALUATION)}
+function menuLeftoverPicker(date,meal){const items=(S.data.restes||[]).filter(r=>r.STATUT!=='CONSOMME'||(r.DATE_UTILISATION===date&&r.REPAS===meal)).filter(r=>!r.DATE_UTILISATION||(r.DATE_UTILISATION===date&&r.REPAS===meal)).sort((a,b)=>String(a.CATEGORIE||'').localeCompare(String(b.CATEGORIE||''))||String(a.NOM||'').localeCompare(String(b.NOM||'')));if(!items.length)return `<div class="full"><label>Restes</label><div class="card sub">Aucun reste disponible à affecter.</div></div>`;return `<div class="full"><label>Restes à utiliser dans ce menu</label><div class="history-actions" style="margin:0 0 8px"><button type="button" class="secondary" onclick="toggleMenuLeftovers(true)">Tout sélectionner</button><button type="button" class="secondary" onclick="toggleMenuLeftovers(false)">Tout désélectionner</button></div><div class="card" style="display:grid;gap:10px">${items.map(r=>{const checked=r.DATE_UTILISATION===date&&r.REPAS===meal;const stillAvailable=r.STATUT!=='CONSOMME';const detail=[r.CATEGORIE,r.QUANTITE&&r.QUANTITE+' '+(r.UNITE||''),r.DATE_LIMITE&&'péremption '+frDate(r.DATE_LIMITE)].filter(Boolean).join(' · ');return `<div><label style="display:flex;gap:9px;align-items:flex-start;color:var(--ink);font-size:14px;font-weight:600;margin:0"><input type="checkbox" name="leftover__${esc(r.ID)}" style="width:auto;margin-top:2px" ${checked?'checked':''}><span><b>${esc(r.NOM)}</b>${detail?`<span class="meta" style="display:block">${esc(detail)}</span>`:''}</span></label><label class="sub" style="display:flex;gap:7px;align-items:center;margin:4px 0 0 28px;font-weight:700"><input type="checkbox" name="leftover_available__${esc(r.ID)}" style="width:auto" ${stillAvailable?'checked':''}> Encore disponible après ce menu</label></div>`}).join('')}</div><div class="sub">Si “Encore disponible” est décoché, le reste est rattaché au menu mais retiré des restes disponibles.</div></div>`}
+function toggleMenuLeftovers(checked){$$('#form input[name^="leftover__"]').forEach(x=>x.checked=checked)}
+function selectedMenuLeftoverIds(v){return Object.keys(v||{}).filter(k=>k.indexOf('leftover__')===0).map(k=>k.slice(10))}
+function selectedMenuLeftoverAvailability(v){const out={};Object.keys(v||{}).filter(k=>k.indexOf('leftover_available__')===0).forEach(k=>{out[k.slice(20)]=true});return out}
+function leftoverPayload(r){return {id:r.ID,name:r.NOM,category:r.CATEGORIE,quantity:r.QUANTITE,unit:r.UNITE,expiry:r.DATE_LIMITE,urgency:r.URGENCE,useDate:r.DATE_UTILISATION,meal:r.REPAS,status:r.STATUT,comment:r.COMMENTAIRE}}
+function openDuplicateMenu(id){
+ const x=S.data.menus.find(m=>String(m.ID)===String(id));if(!x)return;
+ shell(`Dupliquer · ${esc(x.MENU||x.COMMENTAIRE||'Menu')}`,`<input type="hidden" name="sourceId" value="${esc(x.ID)}"><div><label>Nouvelle date</label><input type="date" name="date" required value="${esc(addDays(x.DATE||S.selectedDate,7))}"></div><div><label>Repas</label><select name="meal"><option value="MIDI" ${x.REPAS==='MIDI'?'selected':''}>Midi</option><option value="SOIR" ${x.REPAS==='SOIR'?'selected':''}>Soir</option></select></div><div class="full"><div class="card sub">Copie le menu, le lien recette, les personnes, Chouchou/Loulou, le commentaire et l’évaluation. Les restes ne sont pas recopiés.</div></div>`,duplicateMenuOptimistic)
+}
+function duplicateMenuOptimistic(v){
+ const x=S.data.menus.find(m=>String(m.ID)===String(v.sourceId));if(!x)return;
+ const meal=v.meal==='MIDI'?'MIDI':'SOIR';
+ const existing=S.data.menus.find(m=>m.DATE===v.date&&m.REPAS===meal);
+ if(existing&&!confirm('Un menu existe déjà à cette date et ce repas. Le remplacer ?'))return;
+ saveMenuOptimistic({date:v.date,meal:meal,people:x.PERSONNES||'',menu:x.MENU||'',url:x.URL||'',comment:x.COMMENTAIRE||'',chouchou:x.CHOUCHOU||'À définir',loulou:x.LOULOU||'À définir',rating:x.EVALUATION||'',menuState:x.ETAT_MENU||'A_FAIRE'})
+}
+function openMenu(x){const currentDate=x.date||x.DATE||S.selectedDate;const currentMeal=x.meal||x.REPAS||'MIDI';shell(`${currentMeal} · ${frDate(currentDate)}`,`<input type="hidden" name="id" value="${esc(x.ID||'')}"><input type="hidden" name="originalDate" value="${esc(currentDate)}"><input type="hidden" name="originalMeal" value="${esc(currentMeal)}"><div><label>Date</label><input type="date" name="date" value="${esc(currentDate)}"></div><div><label>Repas</label><select name="meal"><option value="MIDI" ${currentMeal==='MIDI'?'selected':''}>Midi</option><option value="SOIR" ${currentMeal==='SOIR'?'selected':''}>Soir</option></select></div><div><label>Nombre de personnes</label><input name="people" value="${esc(x.PERSONNES||'')}"></div><div><label>Chouchou</label><select name="chouchou">${optionList('childLocations',x.CHOUCHOU||'À définir')}</select></div><div><label>Loulou</label><select name="loulou">${optionList('childLocations',x.LOULOU||'À définir')}</select></div><div class="full"><label>Menu</label><textarea name="menu" autofocus>${esc(x.MENU||'')}</textarea></div>${menuIdeaPicker()}<div class="full"><label>Lien recette</label><input type="url" name="url" value="${esc(x.URL||'')}"></div><div class="full"><label>Commentaire</label><textarea name="comment">${esc(x.COMMENTAIRE||'')}</textarea></div><div><label>Évaluation</label><select name="rating">${ratingOptions(x.EVALUATION)}</select></div><div><label>État</label><select name="menuState">${menuStateOptions(x.ETAT_MENU)}</select></div>${x.ID?`<div class="full"><button type="button" class="secondary" onclick="modal.close();openDuplicateMenu('${esc(x.ID)}')">Dupliquer ce menu</button></div>`:''}${menuLeftoverPicker(currentDate,currentMeal)}`,saveMenuOptimistic)}
+function saveMenuOptimistic(v){
+ const previous=structuredClone({menus:S.data.menus||[],restes:S.data.restes||[]});
+ const meal=v.meal==='MIDI'?'MIDI':'SOIR';
+ const targetKey=v.date+'|'+meal;
+ S.pendingMenuKeys=S.pendingMenuKeys||{};
+ let item=S.data.menus.find(m=>m.ID&&v.id&&String(m.ID)===String(v.id));
+ if(!item)item=S.data.menus.find(m=>!v.id&&m.DATE===v.date&&m.REPAS===meal);
+ if(!item){item={ID:'local-menu-'+Date.now()};S.data.menus.push(item)}
+ S.data.menus=S.data.menus.filter(m=>m===item||!(m.DATE===v.date&&m.REPAS===meal));
+ Object.assign(item,{DATE:v.date,REPAS:meal,PERSONNES:v.people||'',MENU:v.menu||'',URL:v.url||'',COMMENTAIRE:v.comment||'',CHOUCHOU:v.chouchou||'À définir',LOULOU:v.loulou||'À définir',EVALUATION:v.rating||'',ETAT_MENU:menuStateValue(v.menuState),STATUT:'PLANIFIE',MAJ:new Date().toISOString(),_PENDING:true});
+ S.pendingMenuKeys[targetKey]=item.ID;
+ const selected=selectedMenuLeftoverIds(v);
+ const availableAfter=selectedMenuLeftoverAvailability(v);
+ const originalDate=v.originalDate||v.date;
+ const originalMeal=v.originalMeal||meal;
+ const changed=[];
+ (S.data.restes||[]).forEach(r=>{
+  const wasHere=r.DATE_UTILISATION===originalDate&&r.REPAS===originalMeal;
+  const isSelected=selected.includes(String(r.ID));
+  if(isSelected){
+   const nextStatus=availableAfter[String(r.ID)]?'PLANIFIE':'CONSOMME';
+   if(r.DATE_UTILISATION!==v.date||r.REPAS!==meal||r.STATUT!==nextStatus){
+    r.DATE_UTILISATION=v.date;r.REPAS=meal;r.STATUT=nextStatus;r.MAJ=new Date().toISOString();changed.push(r)
+   }
+  }else if(wasHere){
+   r.DATE_UTILISATION='';r.REPAS='';r.STATUT='DISPONIBLE';r.MAJ=new Date().toISOString();changed.push(r)
+  }
+ });
+ S.historySearchCache={};
+ S.selectedDate=v.date;
+ if(!dateRange(addDays(S.start,-S.before),S.before+S.after+1).includes(v.date))S.start=saturdayFor(v.date);
+ markLocalChange();renderMenuCellsForChange(originalDate,originalMeal,v.date,meal);toast('Menu enregistré');writeClientCache();
+ backgroundSync(()=>server('saveMenu',v).then(saved=>{
+  Object.assign(item,saved);
+  item.DATE=v.date;item.REPAS=meal;item.EVALUATION=String(saved.EVALUATION||v.rating||'');delete item._PENDING;
+  delete S.pendingMenuKeys[targetKey];renderMenuCellsForChange(originalDate,originalMeal,v.date,meal);
+  return changed.length?server('saveLeftovers',changed.map(leftoverPayload)).then(()=>saved):saved
+ }).then(saved=>{S.historySearchCache={};writeClientCache();return saved}),()=>{
+  S.data.menus=previous.menus;S.data.restes=previous.restes;delete S.pendingMenuKeys[targetKey];writeClientCache();renderMenuCellsForChange(originalDate,originalMeal,v.date,meal)
+ })
+}function renderLeftovers(){syncLeftoverFilterButtons();const rank={URGENT:0,NON_URGENT:1,BIENTOT:1,OK:1};const categories=leftoverCategoryValues();const order=['Sans catégorie',...categories];const all=[...S.data.restes].filter(x=>x.STATUT!=='CONSOMME');const counts={all:all.length,assigned:all.filter(x=>x.DATE_UTILISATION&&x.REPAS).length,partial:all.filter(x=>(x.DATE_UTILISATION||x.REPAS)&&!(x.DATE_UTILISATION&&x.REPAS)).length,unassigned:all.filter(x=>!x.DATE_UTILISATION&&!x.REPAS).length};let xs=all.filter(x=>S.leftoverFilter==='assigned'?x.DATE_UTILISATION&&x.REPAS:S.leftoverFilter==='partial'?(x.DATE_UTILISATION||x.REPAS)&&!(x.DATE_UTILISATION&&x.REPAS):S.leftoverFilter==='unassigned'?!x.DATE_UTILISATION&&!x.REPAS:true).sort((a,b)=>(rank[a.URGENCE]??1)-(rank[b.URGENCE]??1)||(a.DATE_LIMITE||'9999').localeCompare(b.DATE_LIMITE||'9999')||String(a.NOM||'').localeCompare(String(b.NOM||'')));const groups=groupBy(xs,x=>x.CATEGORIE&&categories.includes(x.CATEGORIE)?x.CATEGORIE:'Sans catégorie');const label=S.leftoverFilter==='assigned'?'affecté(s)':S.leftoverFilter==='partial'?'à compléter':S.leftoverFilter==='unassigned'?'non affecté(s)':'reste(s)';$('#leftoverList').innerHTML=`<div class="card sub">${xs.length} ${label} · ${counts.unassigned} non affecté(s), ${counts.assigned} affecté(s), ${counts.partial} à compléter.</div>`+(xs.length?order.map(c=>{const items=groups[c]||[];if(c==='Sans catégorie'&&!items.length)return'';return `<div class="group"><div class="group-title"><span>${esc(c)}</span><span class="sub">${items.length}</span></div>${items.length?items.map(leftoverCard).join(''):`<div class="card sub">Aucun élément</div>`}</div>`}).join(''):empty('🔎','Aucun reste dans ce filtre','Choisissez un autre filtre.'))}
+function openLeftover(id=''){const x=(S.data.restes||[]).find(r=>String(r.ID)===String(id))||{};const currentCategory=x.ID?(x.CATEGORIE||''):'';shell(x.ID?'Modifier le reste':'Ajouter un reste',`<input type="hidden" name="id" value="${esc(x.ID||'')}"><div class="full"><label>Nom</label><input name="name" required autofocus value="${esc(x.NOM||'')}"></div><div><label>Catégorie</label><select name="category">${optionList('leftoverCategories',currentCategory)}</select></div><div><label>Urgence</label><select name="urgency"><option value="NON_URGENT" ${x.URGENCE!=='URGENT'?'selected':''}>Non urgent</option><option value="URGENT" ${x.URGENCE==='URGENT'?'selected':''}>Urgent</option></select></div><div><label>Date de péremption</label><input type="date" name="expiry" value="${esc(x.DATE_LIMITE||'')}"></div><div><label>Quantité</label><input name="quantity" value="${esc(x.QUANTITE||'')}"></div><div><label>Unité</label><input name="unit" value="${esc(x.UNITE||'')}"></div><div><label>Date d'utilisation prévue</label><input type="date" name="useDate" value="${esc(x.DATE_UTILISATION||'')}"></div><div><label>Repas</label><select name="meal"><option value="" ${!x.REPAS?'selected':''}></option><option value="MIDI" ${x.REPAS==='MIDI'?'selected':''}>MIDI</option><option value="SOIR" ${x.REPAS==='SOIR'?'selected':''}>SOIR</option></select></div><div class="full"><label>Commentaire</label><textarea name="comment">${esc(x.COMMENTAIRE||'')}</textarea></div>`,saveLeftoverOptimistic)}
+function renderLeftoverViews(previous,item){if(S.tab==='restes')renderLeftovers();else if(S.tab==='menus'&&previous&&item)renderMenuCellsForChange(previous.DATE_UTILISATION,previous.REPAS,item.DATE_UTILISATION,item.REPAS);else if(S.tab==='menus')renderMenus()}
+function saveLeftoverOptimistic(v){const previousList=structuredClone(S.data.restes||[]);const old=(S.data.restes||[]).find(r=>String(r.ID)===String(v.id));const previousItem=old?structuredClone(old):null;const item={ID:v.id||'local-rest-'+Date.now(),NOM:v.name,CATEGORIE:v.category||'',QUANTITE:v.quantity||'',UNITE:v.unit||'',DATE_LIMITE:v.expiry||'',URGENCE:v.urgency==='URGENT'?'URGENT':'NON_URGENT',DATE_UTILISATION:v.useDate||'',REPAS:v.meal||'',COMMENTAIRE:v.comment||'',STATUT:v.useDate?(old&&old.STATUT==='CONSOMME'?'CONSOMME':'PLANIFIE'):'DISPONIBLE',MAJ:new Date().toISOString()};const existing=S.data.restes.findIndex(r=>String(r.ID)===String(item.ID));if(existing>=0)S.data.restes[existing]=item;else S.data.restes.push(item);renderLeftoverViews(previousItem,item);toast(v.id?'Reste modifié':'Reste enregistré');writeClientCache();backgroundSync(()=>server('saveLeftover',leftoverPayload(item)).then(saved=>{Object.assign(item,saved);item.CATEGORIE=item.CATEGORIE||'';writeClientCache();return saved}),()=>{S.data.restes=previousList;writeClientCache();renderLeftoverViews()})}
+function deleteLeftoverClient(id){const item=(S.data.restes||[]).find(r=>String(r.ID)===String(id));if(!item)return;if(!confirm(`Supprimer « ${item.NOM} » des restes ?`))return;const previous=structuredClone(S.data.restes||[]);const previousItem=structuredClone(item);S.data.restes=S.data.restes.filter(r=>String(r.ID)!==String(id));if(S.keepLeftovers)delete S.keepLeftovers[id];renderLeftoverViews(previousItem,{DATE_UTILISATION:'',REPAS:''});toast('Reste supprimé');writeClientCache();if(!String(id).startsWith('local-'))backgroundSync(()=>server('deleteLeftover',id),()=>{S.data.restes=previous;writeClientCache();renderLeftoverViews()})}
+function resetLeftoversConfirm(){const keepIds=Object.keys(S.keepLeftovers||{}).filter(id=>S.keepLeftovers[id]).map(String);const previous=structuredClone(S.data.restes||[]);const previousKeep=structuredClone(S.keepLeftovers||{});const count=previous.filter(x=>!keepIds.includes(String(x.ID))).length;if(count<=0){toast('Aucun reste à supprimer');return}if(!confirm(`Réinitialiser la liste des restes ? ${count} élément(s) seront supprimés, ${keepIds.length} conservé(s).`))return;S.data.restes=previous.filter(x=>keepIds.includes(String(x.ID)));S.keepLeftovers={};renderLeftoverViews();toast('Restes réinitialisés');writeClientCache();backgroundSync(()=>server('resetLeftovers',keepIds),()=>{S.data.restes=previous;S.keepLeftovers=previousKeep;writeClientCache();renderLeftoverViews()})}
+boot();
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
