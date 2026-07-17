@@ -801,6 +801,19 @@ function updateMenuState(id, state) {
   });
 }
 
+function archiveMenu(id) {
+  return locked_(function () {
+    ensureSetup_();
+    const record = findById_('menus', id);
+    if (!record) return { ok: true };
+    record.STATUT = 'ARCHIVE';
+    record.MAJ = new Date();
+    upsert_('menus', record);
+    bumpRevision_();
+    return { ok: true };
+  });
+}
+
 function saveLeftover(item) {
   return locked_(function () {
     const now = new Date();
