@@ -362,6 +362,39 @@ function decidePreparation(id,status,el){
 function decidePreparationStockCheck(id,el){
  applyPreparationDecision(id,'A_VERIFIER_STOCK','',el)
 }
+function decideCatalogReference(catalogueId,status,el){
+ const existing=S.data.preparation.find(x=>String(x.CATALOGUE_ID)===String(catalogueId))||S.data.courses.find(x=>String(x.CATALOGUE_ID)===String(catalogueId));
+ if(existing)return applyPreparationDecision(existing.ID,status,'',el);
+ const item=S.data.catalogue.find(x=>String(x.ID)===String(catalogueId));if(!item)return;
+ const local=prepRowFromCatalogue(item,'local-prep-'+Date.now());
+ S.data.preparation.push(local);
+ applyPreparationDecision(local.ID,status,'',el);
+ ensurePreparationItemOnServer(catalogueId,status,'',local.ID);
+}
+function openCatalogBuyDecision(catalogueId,el){
+ const existing=S.data.preparation.find(x=>String(x.CATALOGUE_ID)===String(catalogueId))||S.data.courses.find(x=>String(x.CATALOGUE_ID)===String(catalogueId));
+ if(existing)return openBuyDecision(existing.ID,el);
+ const item=S.data.catalogue.find(x=>String(x.ID)===String(catalogueId));if(!item)return;
+ markPending(el);
+ shell(`Commentaire · ${esc(item.PRODUIT||'Produit')}`,`<input type="hidden" name="catalogueId" value="${esc(catalogueId)}"><div class="full"><label>Commentaire pour la liste de courses</label><textarea name="note" autofocus placeholder="Ex. marque, promo, quantité spéciale, point à vérifier..."></textarea></div>`,v=>{
+  const local=prepRowFromCatalogue(item,'local-prep-'+Date.now());
+  S.data.preparation.push(local);
+  applyPreparationDecision(local.ID,'A_ACHETER',v.note||'',el);
+  ensurePreparationItemOnServer(catalogueId,'A_ACHETER',v.note||'',local.ID);
+ })
+}
+function ensurePreparationItemOnServer(catalogueId,status,note,localId){
+ backgroundSync(()=>server('createPreparationItem',catalogueId).then(saved=>{
+  const row=[...(S.data.preparation||[]),...(S.data.courses||[])].find(x=>String(x.ID)===String(localId)||String(x.CATALOGUE_ID)===String(catalogueId));
+  if(row){const localStatus=row.STATUT,localComment=row.COMMENTAIRE;Object.assign(row,saved,{STATUT:localStatus,COMMENTAIRE:localComment});}
+  S.pendingPrepDecisions=S.pendingPrepDecisions||{};
+  delete S.pendingPrepDecisions[localId];
+  S.pendingPrepDecisions[saved.ID]={status,note:note||'',catalogueId};
+  schedulePrepDecisionFlush(50);
+  writeClientCache();
+  return saved;
+ }),()=>{})
+}
 function openBuyDecision(id,el){
  const record=S.data.preparation.find(x=>x.ID===id)||S.data.courses.find(x=>x.ID===id);if(!record)return;
  markPending(el);
@@ -633,14 +666,14 @@ function renderCourses(){
 function courseCard(x){const check=x.STATUT==='A_VERIFIER_STOCK'?`<span class="stock-question" title="Stock à vérifier">?</span><span class="badge status-check">À vérifier stock</span>`:'';return `<div class="card item course-card" data-id="${x.ID}"><button class="course-done touch-action" onclick="buy('${x.ID}',this)" aria-label="Acheté">✓</button><div class="card-main" onclick="openCourseById('${x.ID}')"><div class="card-topline"><div class="item-name">${esc(x.PRODUIT)}</div>${check}${x.QUANTITE?`<span class="badge">× ${esc(x.QUANTITE)}</span>`:''}</div><div class="course-meta"><span class="pill">${esc(x.RAYON||'Autres')}</span><span class="pill">${esc(x.MAGASIN_ACTUEL||'Autres')}</span>${x.CONDITIONNEMENT?`<span class="pill">${esc(x.CONDITIONNEMENT)}</span>`:''}</div>${x.COMMENTAIRE?`<div class="meta">${esc(x.COMMENTAIRE)}</div>`:''}</div><details class="action-menu" onclick="event.stopPropagation()"><summary aria-label="Actions">⋯</summary><div class="action-panel"><button class="secondary" onclick="openCourseById('${x.ID}')">Modifier</button><button class="secondary" onclick="openCourseById('${x.ID}')">Changer magasin</button></div></details></div>`}
 function openCourseById(id){const x=S.data.courses.find(c=>String(c.ID)===String(id));if(x)openCourse(x)}
 function catalogCard(x,prep,buy){
- const status=buy?.STATUT==='A_VERIFIER_STOCK'?'Stock ?':buy?'À acheter':prep?.STATUT==='A_VERIFIER'?'À vérifier':prep?.STATUT==='IGNORE'?'Écarté':prep?.STATUT==='A_DECIDER'?'À décider':'Référentiel';
- const statusClass=buy?.STATUT==='A_VERIFIER_STOCK'?'status-check':buy?'status-buy':prep?.STATUT==='A_VERIFIER'?'status-check':prep?.STATUT==='IGNORE'?'status-ignore':prep?.STATUT==='A_DECIDER'?'status-todo':'';
+ const status=buy?.STATUT==='A_VERIFIER_STOCK'?'Stock ?':buy?'À acheter':prep?.STATUT==='A_VERIFIER'?'À vérifier':prep?.STATUT==='IGNORE'?'Écarté':'À décider';
+ const statusClass=buy?.STATUT==='A_VERIFIER_STOCK'?'status-check':buy?'status-buy':prep?.STATUT==='A_VERIFIER'?'status-check':prep?.STATUT==='IGNORE'?'status-ignore':'status-todo';
  let decisions='';
  if(buy)decisions=`<button class="danger" onclick="decidePreparation('${buy.ID}','IGNORE',this)">Écarter</button><button class="secondary" onclick="decidePreparation('${buy.ID}','A_VERIFIER',this)">Vérifier</button><button class="secondary" onclick="decidePreparationStockCheck('${buy.ID}',this)">Stock ?</button><button class="primary" onclick="decidePreparation('${buy.ID}','A_ACHETER',this)">Acheter</button><button class="secondary" onclick="openBuyDecision('${buy.ID}',this)">Commentaire</button>`;
  else if(prep?.STATUT==='A_DECIDER')decisions=`<button class="danger" onclick="decidePreparation('${prep.ID}','IGNORE',this)">Écarter</button><button class="secondary" onclick="decidePreparation('${prep.ID}','A_VERIFIER',this)">Vérifier</button><button class="secondary" onclick="decidePreparationStockCheck('${prep.ID}',this)">Stock ?</button><button class="primary" onclick="decidePreparation('${prep.ID}','A_ACHETER',this)">Acheter</button><button class="secondary" onclick="openBuyDecision('${prep.ID}',this)">Commentaire</button>`;
  else if(prep?.STATUT==='A_VERIFIER')decisions=`<button class="danger" onclick="decidePreparation('${prep.ID}','IGNORE',this)">Écarter</button><button class="secondary" onclick="decidePreparation('${prep.ID}','A_VERIFIER',this)">Vérifier</button><button class="secondary" onclick="decidePreparationStockCheck('${prep.ID}',this)">Stock ?</button><button class="primary" onclick="decidePreparation('${prep.ID}','A_ACHETER',this)">Acheter</button><button class="secondary" onclick="openBuyDecision('${prep.ID}',this)">Commentaire</button>`;
  else if(prep?.STATUT==='IGNORE')decisions=`<button class="secondary" onclick="decidePreparation('${prep.ID}','A_DECIDER',this)">Réactiver</button>`;
- else decisions=`<button class="secondary" onclick="addCatalog('${x.ID}',this,'A_VERIFIER_STOCK')">Stock ?</button><button class="primary" onclick="addCatalog('${x.ID}',this)">Ajouter</button>`;
+ else decisions=`<button class="danger" onclick="decideCatalogReference('${x.ID}','IGNORE',this)">Écarter</button><button class="secondary" onclick="decideCatalogReference('${x.ID}','A_VERIFIER',this)">Vérifier</button><button class="secondary" onclick="decideCatalogReference('${x.ID}','A_VERIFIER_STOCK',this)">Stock ?</button><button class="primary" onclick="decideCatalogReference('${x.ID}','A_ACHETER',this)">Acheter</button><button class="secondary" onclick="openCatalogBuyDecision('${x.ID}',this)">Commentaire</button>`;
  const icon=x.ICONE||defaultProductIcon(x.PRODUIT,x.RAYON||x.TYPOLOGIE);
  return `<div class="card catalog-row"><div class="product-title"><span class="product-icon">${esc(icon)}</span><div class="card-main"><div class="card-topline"><div class="item-name">${esc(x.PRODUIT)}</div><span class="badge ${statusClass}">${esc(status)}</span></div><div class="chipline">${x.RAYON?`<span class="pill">Rayon · ${esc(x.RAYON)}</span>`:''}${x.MAGASIN_DEFAUT?`<span class="pill">Magasin · ${esc(x.MAGASIN_DEFAUT)}</span>`:''}<span class="pill">Qté · ${esc(x.QUANTITE_DEFAUT||'1')}</span>${x.CONDITIONNEMENT?`<span class="pill">${esc(x.CONDITIONNEMENT)}</span>`:''}${x.DERNIER_ACHAT?`<span class="pill ok">Acheté ${frDate(x.DERNIER_ACHAT)}</span>`:''}</div></div></div><div class="catalog-actions compact-actions"><div class="decision-actions">${decisions}</div><div class="admin-actions"><button class="secondary" onclick="openCatalogById('${x.ID}')">Modifier</button><button class="danger" onclick="deleteCatalogProduct('${x.ID}')">Supprimer</button></div></div></div>`
 }
