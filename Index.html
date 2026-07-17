@@ -10,7 +10,7 @@
     button,input,select,textarea{font:inherit} button{cursor:pointer} .app{max-width:980px;margin:auto;min-height:100vh;padding-bottom:84px}
     header{position:sticky;top:0;z-index:10;background:rgba(251,250,245,.96);backdrop-filter:blur(10px);padding:18px 18px 10px;border-bottom:1px solid var(--line)}
     .head{display:flex;align-items:center;justify-content:space-between;gap:12px}.head-actions{display:flex;align-items:center;gap:8px}.help-btn{border:0;border-radius:999px;width:32px;height:32px;background:white;color:var(--green);font-weight:900;box-shadow:0 1px 0 var(--line)}.save-now{border:0;border-radius:999px;padding:7px 10px;background:var(--mint);color:var(--green);font-size:12px;font-weight:900;white-space:nowrap}.brand{font-size:22px;font-weight:800}.brand span{color:var(--orange)}
-    .sync{font-size:12px;font-weight:850;color:var(--muted);padding:5px 10px;border-radius:999px;background:rgba(223,243,236,.55);white-space:nowrap}.sync.pending{color:#8a5700;background:#fff0cf;box-shadow:0 0 0 1px rgba(138,87,0,.12) inset}.sync.error{color:var(--red);background:#fde7e2;box-shadow:0 0 0 1px rgba(200,70,48,.14) inset}.sync.ok{color:#17623a;background:#d9f2e3;box-shadow:0 0 0 1px rgba(23,98,58,.12) inset} .toolbar{display:flex;gap:8px;margin-top:12px;overflow:auto;padding-bottom:2px}
+    .sync{font-size:12px;font-weight:850;color:var(--muted);padding:5px 10px;border-radius:999px;background:rgba(223,243,236,.55);white-space:nowrap;cursor:pointer}.sync.pending{color:#8a5700;background:#fff0cf;box-shadow:0 0 0 1px rgba(138,87,0,.12) inset}.sync.error{color:var(--red);background:#fde7e2;box-shadow:0 0 0 1px rgba(200,70,48,.14) inset}.sync.ok{color:#17623a;background:#d9f2e3;box-shadow:0 0 0 1px rgba(23,98,58,.12) inset} .toolbar{display:flex;gap:8px;margin-top:12px;overflow:auto;padding-bottom:2px}
     .chip,.icon-btn,.primary,.secondary,.danger{border:0;border-radius:12px;padding:10px 13px;background:white;color:var(--ink);box-shadow:0 1px 0 var(--line)}
     .chip.active,.primary{background:var(--green);color:white}.primary{font-weight:700}.danger{color:var(--red)}.secondary{background:var(--mint);box-shadow:none}
     main{padding:18px}.panel{display:none}.panel.active{display:block}.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:5px 0 14px}
@@ -44,7 +44,7 @@
 <body>
 <div class="app">
   <header>
-    <div class="head"><div class="brand">Courses <span>&</span> Menus</div><div class="head-actions"><button class="save-now" title="Forcer la sauvegarde" onclick="manualSaveNow()">Sauver</button><button class="help-btn" title="Raccourcis" onclick="openShortcutsHelp()">?</button><div id="sync" class="sync">Connexion…</div></div></div>
+    <div class="head"><div class="brand">Courses <span>&</span> Menus</div><div class="head-actions"><button class="save-now" title="Forcer la sauvegarde" onclick="manualSaveNow()">Sauver</button><button class="help-btn" title="Raccourcis" onclick="openShortcutsHelp()">?</button><button id="sync" class="sync" type="button" onclick="openSyncDetails()">Connexion…</button></div></div>
     <div id="courseToolbar" class="toolbar" style="display:none">
       <button class="chip active" data-group="category">Par rayon</button>
       <button class="chip" data-group="store">Par magasin</button>
@@ -229,7 +229,7 @@ function flushBoughtCourses(){
  if(S.boughtFlushInFlight)return;
  const entries=Object.entries(S.pendingBoughtCourses||{});
  const ids=entries.map(([id,item])=>String((item&&item.ID)||id)).filter(id=>!isLocalCourseId(id));
- if(!ids.length){writeClientCache();return}
+ if(!ids.length){entries.forEach(([id])=>{if(isLocalCourseId(id)&&!(S.pendingCourseSaves||{})[id])delete S.pendingBoughtCourses[id]});writeClientCache();updateSyncStatus();return}
  S.boughtFlushInFlight=true;writeClientCache();
  backgroundSync(()=>server('completeCourses',ids).then(res=>{entries.forEach(([key,item])=>{if(ids.includes(String((item&&item.ID)||key)))delete S.pendingBoughtCourses[key]});writeClientCache();return res}),()=>{entries.forEach(([,item])=>{if(!S.data.courses.some(c=>String(c.ID)===String(item.ID)))S.data.courses.push(item)})}).finally(()=>{S.boughtFlushInFlight=false;if(Object.keys(S.pendingBoughtCourses||{}).length)scheduleBoughtFlush()})
 }
@@ -311,6 +311,16 @@ function backgroundSync(work,rollback){
  return job;
 }
 function pendingLocalCount(){return Object.keys(S.pendingPrepDecisions||{}).length+Object.keys(S.pendingStoreMoves||{}).length+Object.keys(S.pendingBoughtCourses||{}).length+Object.keys(S.pendingCourseSaves||{}).length+Object.keys(S.pendingMenuStates||{}).length+Object.keys(S.pendingLeftoverDeletes||{}).length}
+function pendingSyncBreakdown(){return [
+ ['Référentiel / préparation',Object.keys(S.pendingPrepDecisions||{}).length],
+ ['Changements de magasin',Object.keys(S.pendingStoreMoves||{}).length],
+ ['Articles cochés achetés',Object.keys(S.pendingBoughtCourses||{}).length],
+ ['Produits de courses modifiés',Object.keys(S.pendingCourseSaves||{}).length],
+ ['États de menus',Object.keys(S.pendingMenuStates||{}).length],
+ ['Suppressions de restes',Object.keys(S.pendingLeftoverDeletes||{}).length]
+].filter(([,n])=>n)}
+function pendingSyncExamples(label){const take=a=>a.filter(Boolean).slice(0,3).map(esc).join(', ');if(label==='Référentiel / préparation')return take(Object.entries(S.pendingPrepDecisions||{}).map(([id,v])=>{const cid=typeof v==='string'?'':v.catalogueId;const r=[...(S.data?.preparation||[]),...(S.data?.courses||[])].find(x=>String(x.ID)===String(id)||String(x.CATALOGUE_ID)===String(cid));return r&&r.PRODUIT}));if(label==='Changements de magasin')return take(Object.keys(S.pendingStoreMoves||{}).map(id=>(S.data?.courses||[]).find(x=>String(x.ID)===String(id))?.PRODUIT));if(label==='Articles cochés achetés')return take(Object.values(S.pendingBoughtCourses||{}).map(x=>x&&x.PRODUIT));if(label==='Produits de courses modifiés')return take(Object.values(S.pendingCourseSaves||{}).map(x=>x?.item?.PRODUIT||x?.payload?.product));if(label==='États de menus')return take(Object.keys(S.pendingMenuStates||{}).map(id=>(S.data?.menus||[]).find(x=>String(x.ID)===String(id))?.MENU||'Menu'));if(label==='Suppressions de restes')return take(Object.values(S.pendingLeftoverDeletes||{}).map(x=>x&&x.name));return''}
+function openSyncDetails(){const rows=pendingSyncBreakdown();const state=isFullySynced()?`<div class="card"><h3>✅ Tout est synchronisé</h3><p class="sub">Toutes les actions locales ont été confirmées par le serveur.</p></div>`:`<div class="card"><h3>${pendingLocalCount()} action(s) locale(s) à sauvegarder</h3>${rows.length?rows.map(([label,n])=>{const examples=pendingSyncExamples(label);return `<div class="chipline"><span class="pill">${n}</span><span>${esc(label)}</span>${examples?`<span class="sub">· ${examples}</span>`:''}</div>`}).join(''):'<p class="sub">Aucune file locale identifiée, sauvegarde ou chargement en cours.</p>'}<p class="sub" style="margin-top:10px">${esc(syncDetailsText())}</p></div>`;$('#modalBody').innerHTML=`<div class="modal-head"><h2>État de synchronisation</h2><button class="close" onclick="modal.close()">×</button></div>${state}<div class="actions"><button class="secondary" onclick="modal.close()">Fermer</button><button class="primary" onclick="manualSaveNow()">Relancer la sauvegarde</button></div>`;modal.showModal()}
 function setSyncStatus(text,state='ok',force=false){const x=$('#sync');if(!x)return;if(!force&&state==='ok'&&!isFullySynced()){updateSyncStatus();return}x.textContent=text;x.className='sync '+state;x.title=syncDetailsText()}
 function syncDetailsText(){const local=pendingLocalCount();if(isFullySynced())return 'Toutes les données locales ont été confirmées par le serveur.';return `${local} action(s) locale(s) en attente, ${S.pendingSyncs||0} synchro(s) en cours${S.deferredSyncs?`, ${S.deferredSyncs} retry réseau`:''}.`}
 function isFullySynced(){return !S.pendingSyncs&&!S.deferredSyncs&&!pendingLocalCount()&&!S.prepFlushInFlight&&!S.storeFlushInFlight&&!S.boughtFlushInFlight&&!S.courseSaveInFlight&&!S.menuStateInFlight&&!S.leftoverDeleteInFlight&&!S.catalogLoading&&!S.shoppingLoading}
