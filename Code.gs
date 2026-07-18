@@ -3,7 +3,7 @@ const APP = {
   sheets: {
     settings: ['CLE', 'VALEUR'],
     catalogue: ['ID', 'TYPOLOGIE', 'PRODUIT', 'MAGASIN_DEFAUT', 'RAYON', 'CONDITIONNEMENT', 'ACTIF', 'DERNIER_ACHAT', 'MAJ', 'QUANTITE_DEFAUT', 'ICONE'],
-    courses: ['ID', 'CATALOGUE_ID', 'PRODUIT', 'TYPOLOGIE', 'MAGASIN_DEFAUT', 'MAGASIN_ACTUEL', 'RAYON', 'QUANTITE', 'CONDITIONNEMENT', 'COMMENTAIRE', 'STATUT', 'AJOUTE_LE', 'ACHETE_LE', 'MAJ'],
+    courses: ['ID', 'CATALOGUE_ID', 'PRODUIT', 'TYPOLOGIE', 'MAGASIN_DEFAUT', 'MAGASIN_ACTUEL', 'RAYON', 'QUANTITE', 'CONDITIONNEMENT', 'COMMENTAIRE', 'STATUT', 'AJOUTE_LE', 'ACHETE_LE', 'MAJ', 'MENUS_IDS'],
     menus: ['ID', 'DATE', 'REPAS', 'PERSONNES', 'MENU', 'URL', 'COMMENTAIRE', 'CHOUCHOU', 'LOULOU', 'DEPLACEMENT', 'STATUT', 'MAJ', 'EVALUATION', 'ETAT_MENU'],
     restes: ['ID', 'NOM', 'QUANTITE', 'UNITE', 'DATE_LIMITE', 'URGENCE', 'DATE_UTILISATION', 'REPAS', 'STATUT', 'COMMENTAIRE', 'MAJ', 'CATEGORIE'],
     recettes: ['ID', 'NOM', 'URL', 'COMMENTAIRE', 'MAJ'],
@@ -46,7 +46,7 @@ function setupApp_() {
   setSetting_('REVISION', String(Date.now()));
   seedReferences_();
   seedSeasonalVegetables_();
-  setSetting_('APP_VERSION', '2.2.0');
+  setSetting_('APP_VERSION', '2.3.0');
   setSetting_('WEEK_START', '6');
   return { ok: true, spreadsheetUrl: ss.getUrl() };
 }
@@ -337,7 +337,8 @@ function saveCourse(item) {
       STATUT: normalizeCourseStatus_(item.status || (existing && existing.STATUT) || 'A_ACHETER'),
       AJOUTE_LE: existing ? existing.AJOUTE_LE : now,
       ACHETE_LE: existing ? existing.ACHETE_LE : '',
-      MAJ: now
+      MAJ: now,
+      MENUS_IDS: clean_(item.menuIds !== undefined ? item.menuIds : (existing && existing.MENUS_IDS))
     };
     if (!record.PRODUIT) throw new Error('Le nom du produit est obligatoire.');
     upsert_('courses', record);
@@ -1063,7 +1064,7 @@ function recipeIdeaKey_(name, url) {
 
 function ensureSetup_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss.getSheetByName(sheetName_('settings')) || getSetting_('APP_VERSION') !== '2.2.0') setupApp_();
+  if (!ss.getSheetByName(sheetName_('settings')) || getSetting_('APP_VERSION') !== '2.3.0') setupApp_();
 }
 
 function sheetName_(key) {
