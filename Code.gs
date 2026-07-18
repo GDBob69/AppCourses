@@ -10,7 +10,8 @@ const APP = {
     historiqueMenus: ['ID', 'DATE', 'REPAS', 'PERSONNES', 'MENU', 'URL', 'COMMENTAIRE', 'CHOUCHOU', 'LOULOU', 'DEPLACEMENT', 'STATUT', 'MAJ', 'EVALUATION', 'ETAT_MENU'],
     references: ['ID', 'TYPE', 'VALEUR', 'ACTIF', 'ORDRE', 'MAJ'],
     ideesPlats: ['ID', 'PLAT', 'URL', 'COMMENTAIRE', 'STATUT', 'DATE_PLANIFIEE', 'REPAS_PLANIFIE', 'MAJ', 'EVALUATION'],
-    legumesSaison: ['ID', 'ITEM', 'MOIS', 'MAJ']
+    legumesSaison: ['ID', 'ITEM', 'MOIS', 'MAJ'],
+    menuIngredients: ['ID', 'MENU_ID', 'CATALOGUE_ID', 'PRODUIT', 'QUANTITE', 'UNITE', 'COMMENTAIRE', 'STATUT', 'COURSE_ID', 'RESTE_ID', 'MAJ']
   }
 };
 
@@ -46,7 +47,7 @@ function setupApp_() {
   setSetting_('REVISION', String(Date.now()));
   seedReferences_();
   seedSeasonalVegetables_();
-  setSetting_('APP_VERSION', '2.3.0');
+  setSetting_('APP_VERSION', '2.4.0');
   setSetting_('WEEK_START', '6');
   return { ok: true, spreadsheetUrl: ss.getUrl() };
 }
@@ -77,7 +78,8 @@ function getBootstrap() {
     recettes: [],
     references: getReferences_(),
     ideesPlats: rows_('ideesPlats').filter(function (x) { return x.STATUT !== 'SUPPRIME'; }),
-    legumesSaison: rows_('legumesSaison')
+    legumesSaison: rows_('legumesSaison'),
+    menuIngredients: rows_('menuIngredients')
   };
 }
 
@@ -104,7 +106,8 @@ function getBootstrapLight() {
     recettes: [],
     references: getReferences_(),
     ideesPlats: rows_('ideesPlats').filter(function (x) { return x.STATUT !== 'SUPPRIME'; }),
-    legumesSaison: rows_('legumesSaison')
+    legumesSaison: rows_('legumesSaison'),
+    menuIngredients: rows_('menuIngredients')
   };
 }
 
@@ -124,7 +127,8 @@ function getBootstrapHome() {
     menus: rows_('menus').filter(function (x) {
       return x.STATUT !== 'ARCHIVE' && x.DATE >= minMenuIso && x.DATE <= maxMenuIso;
     }),
-    restes: rows_('restes').filter(isVisibleLeftover_)
+    restes: rows_('restes').filter(isVisibleLeftover_),
+    menuIngredients: rows_('menuIngredients')
   };
 }
 
@@ -844,6 +848,86 @@ function saveMenu(item) {
   });
 }
 
+function saveMenuIngredients(menuId, items) {
+  return locked_(function () {
+    ensureSetup_();
+    const id = clean_(menuId);
+    if (!id) throw new Error('Menu obligatoire pour les ingrédients.');
+    const now = new Date();
+    rows_('menuIngredients').forEach(function (x) {
+      if (String(x.MENU_ID) === String(id)) deleteById_('menuIngredients', x.ID);
+    });
+    const records = (items || []).map(function (item) {
+      return {
+        ID: clean_(item.id) || Utilities.getUuid(),
+        MENU_ID: id,
+        CATALOGUE_ID: clean_(item.catalogueId),
+        PRODUIT: clean_(item.product),
+        QUANTITE: clean_(item.quantity),
+        UNITE: clean_(item.unit),
+        COMMENTAIRE: clean_(item.comment),
+        STATUT: normalizeIngredientStatus_(item.status),
+        COURSE_ID: clean_(item.courseId),
+        RESTE_ID: clean_(item.leftoverId),
+        MAJ: now
+      };
+    }).filter(function (x) { return x.PRODUIT; });
+    appendRecords_('menuIngredients', records);
+    bumpRevision_();
+    return records.map(serializeRecord_);
+  });
+}
+
+function addMenuIngredientsToCourses(menuId) {
+  return locked_(function () {
+    ensureSetup_();
+    const id = clean_(menuId);
+    const menu = findById_('menus', id);
+    if (!menu) throw new Error('Menu introuvable.');
+    const now = new Date();
+    const records = rows_('menuIngredients').filter(function (x) {
+      return String(x.MENU_ID) === String(id) && ['A_ACHETER', 'A_VERIFIER_STOCK'].indexOf(x.STATUT) >= 0;
+    });
+    const results = records.map(function (item) {
+      let course = item.COURSE_ID ? findById_('courses', item.COURSE_ID) : null;
+      const catalogue = item.CATALOGUE_ID ? findById_('catalogue', item.CATALOGUE_ID) : null;
+      if (!course) {
+        course = {
+          ID: Utilities.getUuid(),
+          CATALOGUE_ID: item.CATALOGUE_ID || '',
+          PRODUIT: item.PRODUIT || (catalogue && catalogue.PRODUIT) || '',
+          TYPOLOGIE: (catalogue && (catalogue.RAYON || catalogue.TYPOLOGIE)) || 'Autres',
+          MAGASIN_DEFAUT: (catalogue && catalogue.MAGASIN_DEFAUT) || '',
+          MAGASIN_ACTUEL: (catalogue && catalogue.MAGASIN_DEFAUT) || '',
+          RAYON: (catalogue && catalogue.RAYON) || '',
+          QUANTITE: item.QUANTITE || (catalogue && catalogue.QUANTITE_DEFAUT) || '1',
+          CONDITIONNEMENT: item.UNITE || (catalogue && catalogue.CONDITIONNEMENT) || '',
+          COMMENTAIRE: item.COMMENTAIRE || menu.MENU || '',
+          STATUT: item.STATUT,
+          AJOUTE_LE: now,
+          ACHETE_LE: '',
+          MAJ: now,
+          MENUS_IDS: id
+        };
+      } else {
+        course.QUANTITE = item.QUANTITE || course.QUANTITE;
+        course.CONDITIONNEMENT = item.UNITE || course.CONDITIONNEMENT;
+        course.COMMENTAIRE = item.COMMENTAIRE || course.COMMENTAIRE;
+        course.STATUT = item.STATUT;
+        course.MENUS_IDS = mergeIds_(course.MENUS_IDS, id);
+        course.MAJ = now;
+      }
+      upsert_('courses', course);
+      item.COURSE_ID = course.ID;
+      item.MAJ = now;
+      upsert_('menuIngredients', item);
+      return serializeRecord_(course);
+    });
+    if (records.length) bumpRevision_();
+    return { ok: true, courses: results, ingredients: rows_('menuIngredients').filter(function (x) { return String(x.MENU_ID) === String(id); }).map(serializeRecord_) };
+  });
+}
+
 function updateMenuState(id, state) {
   return locked_(function () {
     ensureSetup_();
@@ -1086,7 +1170,7 @@ function recipeIdeaKey_(name, url) {
 
 function ensureSetup_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss.getSheetByName(sheetName_('settings')) || getSetting_('APP_VERSION') !== '2.3.0') setupApp_();
+  if (!ss.getSheetByName(sheetName_('settings')) || getSetting_('APP_VERSION') !== '2.4.0') setupApp_();
 }
 
 function sheetName_(key) {
@@ -1094,7 +1178,8 @@ function sheetName_(key) {
     settings: 'APP_PARAMETRES', catalogue: 'APP_CATALOGUE', courses: 'APP_COURSES',
     menus: 'APP_MENUS', restes: 'APP_RESTES', recettes: 'APP_RECETTES',
     historiqueMenus: 'APP_HISTORIQUE_MENUS', references: 'APP_REFERENTIELS',
-    ideesPlats: 'APP_IDEES_PLATS', legumesSaison: 'APP_LEGUMES_SAISON'
+    ideesPlats: 'APP_IDEES_PLATS', legumesSaison: 'APP_LEGUMES_SAISON',
+    menuIngredients: 'APP_MENU_INGREDIENTS'
   };
   return names[key];
 }
@@ -1392,6 +1477,15 @@ function normalizeMenuState_(value) {
 function normalizeCourseStatus_(value) {
   const raw = clean_(value).toUpperCase();
   return raw === 'A_VERIFIER_STOCK' ? 'A_VERIFIER_STOCK' : 'A_ACHETER';
+}
+function normalizeIngredientStatus_(value) {
+  const raw = clean_(value).toUpperCase();
+  return ['A_VERIFIER_STOCK', 'A_ACHETER', 'EN_STOCK', 'IGNORE'].indexOf(raw) >= 0 ? raw : 'A_VERIFIER_STOCK';
+}
+function mergeIds_(current, id) {
+  const ids = String(current || '').split(',').map(function (x) { return clean_(x); }).filter(Boolean);
+  if (id && ids.indexOf(String(id)) < 0) ids.push(String(id));
+  return ids.join(',');
 }
 function isActiveCourse_(record) {
   const status = clean_(record && record.STATUT).toUpperCase();
