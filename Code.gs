@@ -152,6 +152,14 @@ function getShoppingData() {
   };
 }
 
+function getCourseListData() {
+  ensureSetup_();
+  return {
+    revision: getRevision_(),
+    courses: rows_('courses').filter(isActiveCourse_)
+  };
+}
+
 function getCatalogData() {
   ensureSetup_();
   const shopping = getShoppingData();
