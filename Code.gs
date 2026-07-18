@@ -265,6 +265,20 @@ function searchMenuHistory(query, limit, month, minRating) {
     .slice(0, max);
 }
 
+function getMenuHistoryIndex() {
+  ensureSetup_();
+  return {
+    revision: getRevision_(),
+    rows: getMenuHistorySearchRows_().map(function (x) {
+      x.SEARCH_TEXT = normalizeSearch_([
+        x.MENU, x.COMMENTAIRE, x.PERSONNES, x.DATE, x.REPAS,
+        x.CHOUCHOU, x.LOULOU, x.DEPLACEMENT, x.URL, x.EVALUATION
+      ].join(' '));
+      return x;
+    })
+  };
+}
+
 function normalizeSearch_(value) {
   return clean_(value).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
