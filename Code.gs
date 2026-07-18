@@ -11,7 +11,7 @@ const APP = {
     references: ['ID', 'TYPE', 'VALEUR', 'ACTIF', 'ORDRE', 'MAJ'],
     ideesPlats: ['ID', 'PLAT', 'URL', 'COMMENTAIRE', 'STATUT', 'DATE_PLANIFIEE', 'REPAS_PLANIFIE', 'MAJ', 'EVALUATION'],
     legumesSaison: ['ID', 'ITEM', 'MOIS', 'MAJ'],
-    menuIngredients: ['ID', 'MENU_ID', 'CATALOGUE_ID', 'PRODUIT', 'QUANTITE', 'UNITE', 'COMMENTAIRE', 'STATUT', 'COURSE_ID', 'RESTE_ID', 'MAJ']
+    menuIngredients: ['ID', 'MENU_ID', 'CATALOGUE_ID', 'PRODUIT', 'QUANTITE', 'UNITE', 'COMMENTAIRE', 'STATUT', 'COURSE_ID', 'RESTE_ID', 'MAJ', 'MAGASIN', 'RAYON']
   }
 };
 
@@ -36,7 +36,7 @@ function setupApp_() {
   setSetting_('REVISION', String(Date.now()));
   seedReferences_();
   seedSeasonalVegetables_();
-  setSetting_('APP_VERSION', '2.4.1');
+  setSetting_('APP_VERSION', '2.4.2');
   setSetting_('WEEK_START', '6');
   return { ok: true, spreadsheetUrl: ss.getUrl() };
 }
@@ -874,6 +874,8 @@ function saveMenuIngredients(menuId, items) {
         STATUT: normalizeIngredientStatus_(item.status),
         COURSE_ID: clean_(item.courseId),
         RESTE_ID: clean_(item.leftoverId),
+        MAGASIN: clean_(item.store),
+        RAYON: clean_(item.aisle),
         MAJ: now
       };
     }).filter(function (x) { return x.PRODUIT; });
@@ -901,10 +903,10 @@ function addMenuIngredientsToCourses(menuId) {
           ID: Utilities.getUuid(),
           CATALOGUE_ID: item.CATALOGUE_ID || '',
           PRODUIT: item.PRODUIT || (catalogue && catalogue.PRODUIT) || '',
-          TYPOLOGIE: (catalogue && (catalogue.RAYON || catalogue.TYPOLOGIE)) || 'Autres',
-          MAGASIN_DEFAUT: (catalogue && catalogue.MAGASIN_DEFAUT) || '',
-          MAGASIN_ACTUEL: (catalogue && catalogue.MAGASIN_DEFAUT) || '',
-          RAYON: (catalogue && catalogue.RAYON) || '',
+          TYPOLOGIE: item.RAYON || (catalogue && (catalogue.RAYON || catalogue.TYPOLOGIE)) || 'Autres',
+          MAGASIN_DEFAUT: item.MAGASIN || (catalogue && catalogue.MAGASIN_DEFAUT) || '',
+          MAGASIN_ACTUEL: item.MAGASIN || (catalogue && catalogue.MAGASIN_DEFAUT) || '',
+          RAYON: item.RAYON || (catalogue && catalogue.RAYON) || '',
           QUANTITE: item.QUANTITE || (catalogue && catalogue.QUANTITE_DEFAUT) || '1',
           CONDITIONNEMENT: item.UNITE || (catalogue && catalogue.CONDITIONNEMENT) || '',
           COMMENTAIRE: item.COMMENTAIRE || menu.MENU || '',
@@ -919,6 +921,10 @@ function addMenuIngredientsToCourses(menuId) {
         course.CONDITIONNEMENT = item.UNITE || course.CONDITIONNEMENT;
         course.COMMENTAIRE = item.COMMENTAIRE || course.COMMENTAIRE;
         course.STATUT = item.STATUT;
+        course.MAGASIN_DEFAUT = item.MAGASIN || course.MAGASIN_DEFAUT;
+        course.MAGASIN_ACTUEL = item.MAGASIN || course.MAGASIN_ACTUEL;
+        course.RAYON = item.RAYON || course.RAYON;
+        course.TYPOLOGIE = item.RAYON || course.TYPOLOGIE;
         course.MENUS_IDS = mergeIds_(course.MENUS_IDS, id);
         course.MAJ = now;
       }
@@ -1175,7 +1181,7 @@ function recipeIdeaKey_(name, url) {
 
 function ensureSetup_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss.getSheetByName(sheetName_('settings')) || getSetting_('APP_VERSION') !== '2.4.1') setupApp_();
+  if (!ss.getSheetByName(sheetName_('settings')) || getSetting_('APP_VERSION') !== '2.4.2') setupApp_();
 }
 
 function sheetName_(key) {
