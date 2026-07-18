@@ -378,7 +378,7 @@ function completeCourses(ids) {
     (ids || []).forEach(function (id) {
       const record = findById_('courses', id);
       if (!record) {
-        results.push({ ok: false, missing: true, id: id });
+        results.push({ ok: true, missing: true, id: id });
         return;
       }
       record.STATUT = 'ACHETE';

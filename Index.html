@@ -246,13 +246,13 @@ function flushBoughtCourses(){
   const waiters=entries.filter(([,item])=>item&&item.CATALOGUE_ID&&S.pendingAdds&&S.pendingAdds[item.CATALOGUE_ID]);
   if(waiters.length){
    S.boughtFlushInFlight=true;writeClientCache();updateSyncStatus();
-   backgroundSync(()=>Promise.all(waiters.map(([localId,item])=>S.pendingAdds[item.CATALOGUE_ID]().then(saved=>server('completeCourse',saved.ID).then(()=>{rememberBoughtHidden(saved);delete S.pendingBoughtCourses[localId];writeClientCache();return saved})))),()=>{}).finally(()=>{S.boughtFlushInFlight=false;if(Object.keys(S.pendingBoughtCourses||{}).length)scheduleBoughtFlush(900);else updateSyncStatus()});
+ backgroundSync(()=>Promise.all(waiters.map(([localId,item])=>S.pendingAdds[item.CATALOGUE_ID]().then(saved=>server('completeCourse',saved.ID).then(()=>{confirmBoughtHidden(saved,localId);delete S.pendingBoughtCourses[localId];delete S.pendingBoughtCourses[saved.ID];writeClientCache();return saved})))),()=>{}).finally(()=>{S.boughtFlushInFlight=false;if(Object.keys(S.pendingBoughtCourses||{}).length)scheduleBoughtFlush(900);else updateSyncStatus()});
    return;
   }
   cleanupStalePendingActions(true);writeClientCache();updateSyncStatus();return
  }
  S.boughtFlushInFlight=true;writeClientCache();
- backgroundSync(()=>server('completeCourses',ids).then(res=>{const okIds=new Set(((res&&res.results)||[]).filter(x=>x&&x.ok).map(x=>String(x.id)));entries.forEach(([key,item])=>{const doneId=String((item&&item.ID)||key);if(okIds.has(doneId)){rememberBoughtHidden(item);delete S.pendingBoughtCourses[key]}});writeClientCache();return res}),()=>{entries.forEach(([,item])=>{if(!S.data.courses.some(c=>String(c.ID)===String(item.ID)))S.data.courses.push(item)})}).finally(()=>{S.boughtFlushInFlight=false;if(Object.keys(S.pendingBoughtCourses||{}).length)scheduleBoughtFlush()})
+ backgroundSync(()=>server('completeCourses',ids).then(res=>{const okIds=new Set(((res&&res.results)||[]).filter(x=>x&&x.ok).map(x=>String(x.id)));entries.forEach(([key,item])=>{const doneId=String((item&&item.ID)||key);if(okIds.has(doneId)){confirmBoughtHidden(item,doneId);delete S.pendingBoughtCourses[key]}});writeClientCache();return res}),()=>{}).finally(()=>{S.boughtFlushInFlight=false;if(Object.keys(S.pendingBoughtCourses||{}).length)scheduleBoughtFlush(1200);else updateSyncStatus()})
 }
 function flushAllPendingNow(){
  cleanupStalePendingActions(true);
@@ -537,10 +537,12 @@ function reconcileSavedCourse(localId,saved,token){
  return saved;
 }
 function applyPendingCourseSavesLocally(){const data=ensureData();Object.entries(S.pendingCourseSaves||{}).forEach(([id,entry])=>{if(!entry||!entry.item)return;let item=(data.courses||[]).find(c=>String(c.ID)===String(id));if(item)Object.assign(item,entry.item);else data.courses.push(structuredClone(entry.item))})}
-function rememberBoughtHidden(item){if(!item)return;S.hiddenBoughtCourses=S.hiddenBoughtCourses||{};const until=Date.now()+120000;[item.ID&&'id:'+item.ID,item.CATALOGUE_ID&&'cat:'+item.CATALOGUE_ID,item.PRODUIT&&'name:'+searchKey(item.PRODUIT)].filter(Boolean).forEach(k=>S.hiddenBoughtCourses[k]=until)}
-function forgetBoughtHidden(item){if(!item||!S.hiddenBoughtCourses)return;[item.ID&&'id:'+item.ID,item.CATALOGUE_ID&&'cat:'+item.CATALOGUE_ID,item.PRODUIT&&'name:'+searchKey(item.PRODUIT)].filter(Boolean).forEach(k=>delete S.hiddenBoughtCourses[k])}
-function pruneHiddenBoughtCourses(){const now=Date.now();Object.entries(S.hiddenBoughtCourses||{}).forEach(([k,until])=>{if(Number(until)<now)delete S.hiddenBoughtCourses[k]})}
-function isHiddenBoughtCourse(item){if(!item)return false;pruneHiddenBoughtCourses();const h=S.hiddenBoughtCourses||{};return !!(h['id:'+item.ID]||h['cat:'+item.CATALOGUE_ID]||h['name:'+searchKey(item.PRODUIT)])}
+function boughtHiddenKeys(item,loose=true){return [item?.ID&&'id:'+item.ID,loose&&item?.CATALOGUE_ID&&'cat:'+item.CATALOGUE_ID,loose&&item?.PRODUIT&&'name:'+searchKey(item.PRODUIT)].filter(Boolean)}
+function rememberBoughtHidden(item,loose=true,ttl=24*60*60*1000){if(!item)return;S.hiddenBoughtCourses=S.hiddenBoughtCourses||{};const until=Date.now()+ttl;boughtHiddenKeys(item,loose).forEach(k=>S.hiddenBoughtCourses[k]=until)}
+function confirmBoughtHidden(item,confirmedId){if(!item)return;forgetBoughtHidden(item);rememberBoughtHidden(Object.assign({},item,{ID:confirmedId||item.ID}),false,24*60*60*1000)}
+function forgetBoughtHidden(item){if(!item||!S.hiddenBoughtCourses)return;boughtHiddenKeys(item,true).forEach(k=>delete S.hiddenBoughtCourses[k])}
+function pruneHiddenBoughtCourses(){const now=Date.now();Object.entries(S.hiddenBoughtCourses||{}).forEach(([k,until])=>{const limit=typeof until==='object'?until.until:until;if(Number(limit)<now)delete S.hiddenBoughtCourses[k]})}
+function isHiddenBoughtCourse(item){if(!item)return false;pruneHiddenBoughtCourses();const h=S.hiddenBoughtCourses||{};return boughtHiddenKeys(item,true).some(k=>Object.prototype.hasOwnProperty.call(h,k))}
 function applyPendingBoughtCoursesLocally(){const data=ensureData();const boughtIds=new Set(Object.keys(S.pendingBoughtCourses||{}).map(String));data.courses=(data.courses||[]).filter(c=>!boughtIds.has(String(c.ID))&&!isHiddenBoughtCourse(c))}
 function saveCatalogOptimistic(v){
  const previous=structuredClone({catalogue:S.data.catalogue,courses:S.data.courses,preparation:S.data.preparation});
