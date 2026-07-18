@@ -181,6 +181,15 @@ function getCatalogData() {
   };
 }
 
+function getMenuIngredientLookups() {
+  ensureSetup_();
+  return {
+    revision: getRevision_(),
+    catalogue: rows_('catalogue').filter(function (x) { return x.ACTIF !== false && x.ACTIF !== 'FALSE'; }),
+    references: getReferences_()
+  };
+}
+
 function getSeasonData() {
   ensureSetup_();
   return {
