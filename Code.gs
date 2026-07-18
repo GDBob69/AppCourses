@@ -31,25 +31,30 @@ function setupApp() {
 function setupApp_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   Object.keys(APP.sheets).forEach(function (key) {
-    const name = sheetName_(key);
-    let sh = ss.getSheetByName(name);
-    if (!sh) sh = ss.insertSheet(name);
-    const headers = APP.sheets[key];
-    ensureSheetSize_(sh, 1, headers.length);
-    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
-    sh.setFrozenRows(1);
-    sh.getRange(1, 1, 1, headers.length)
-      .setFontWeight('bold').setBackground('#184E47').setFontColor('#FFFFFF');
-    if (sh.getMaxColumns() > headers.length) {
-      sh.deleteColumns(headers.length + 1, sh.getMaxColumns() - headers.length);
-    }
+    ensureAppSheet_(ss, key);
   });
   setSetting_('REVISION', String(Date.now()));
   seedReferences_();
   seedSeasonalVegetables_();
-  setSetting_('APP_VERSION', '2.4.0');
+  setSetting_('APP_VERSION', '2.4.1');
   setSetting_('WEEK_START', '6');
   return { ok: true, spreadsheetUrl: ss.getUrl() };
+}
+
+function ensureAppSheet_(ss, key) {
+  const name = sheetName_(key);
+  let sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name);
+  const headers = APP.sheets[key];
+  ensureSheetColumns_(sh, headers.length);
+  const current = sh.getRange(1, 1, 1, headers.length).getDisplayValues()[0];
+  const changed = headers.some(function (h, i) { return String(current[i] || '') !== String(h); });
+  if (changed) sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  try { if (sh.getFrozenRows() !== 1) sh.setFrozenRows(1); } catch (e) {}
+  try {
+    sh.getRange(1, 1, 1, headers.length)
+      .setFontWeight('bold').setBackground('#184E47').setFontColor('#FFFFFF');
+  } catch (e) {}
 }
 
 function getBootstrap() {
@@ -1170,7 +1175,7 @@ function recipeIdeaKey_(name, url) {
 
 function ensureSetup_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss.getSheetByName(sheetName_('settings')) || getSetting_('APP_VERSION') !== '2.4.0') setupApp_();
+  if (!ss.getSheetByName(sheetName_('settings')) || getSetting_('APP_VERSION') !== '2.4.1') setupApp_();
 }
 
 function sheetName_(key) {
@@ -1185,16 +1190,12 @@ function sheetName_(key) {
 }
 
 function ensureSheetSize_(sh, minRows, minCols) {
-  const rows = sh.getMaxRows();
-  if (rows < minRows) {
-    if (rows <= 0) sh.insertRows(1, minRows);
-    else sh.insertRowsAfter(rows, minRows - rows);
-  }
+  ensureSheetColumns_(sh, minCols);
+}
+
+function ensureSheetColumns_(sh, minCols) {
   const cols = sh.getMaxColumns();
-  if (cols < minCols) {
-    if (cols <= 0) sh.insertColumns(1, minCols);
-    else sh.insertColumnsAfter(cols, minCols - cols);
-  }
+  if (cols < minCols) sh.insertColumnsAfter(cols, minCols - cols);
 }
 
 function rows_(key) {
